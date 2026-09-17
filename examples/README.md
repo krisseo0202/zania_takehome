@@ -53,3 +53,48 @@ as any difference between the overlaps.
 Kept at 150 (30%). At 500 characters that is roughly one or two sentences of
 protection against a fact being split across a boundary, and the alternative
 saves $0.0004 a run. It is a judgement call, not a measurement.
+
+## Top-k comparison
+
+Four more runs at `chunk_size=500`, `chunk_overlap=150`, varying `top_k` only.
+`k=5` was re-run in the same session as a fresh baseline (`nave-chunk500-k5-b.json`);
+the first row is the earlier run from the chunk-size table.
+
+```bash
+TOP_K=8 .venv/bin/python scripts/run_sample.py \
+  Nave-SOC2-Type-2-Report.pdf samples/questions.json > examples/nave-chunk500-k8.json
+```
+
+| top_k | answered | abstained | chat input | chat output | embedding | est. cost |
+|---|---|---|---|---|---|---|
+| 5 (earlier) | 9 | 10 | 21,135 | 659 | 94,227 | $0.0054 |
+| 5 | 8 | 11 | 21,135 | 580 | 94,227 | $0.0054 |
+| 6 | 8 | 11 | 23,734 | 645 | 94,227 | $0.0058 |
+| 7 | 6 | 13 | 26,261 | 536 | 94,227 | $0.0061 |
+| 8 | 8 | 11 | 28,887 | 637 | 94,227 | $0.0066 |
+
+**Cost is linear in k.** Each extra chunk adds ~2,600 chat input tokens per
+19 questions (five 500-char chunks, nineteen times), about +$0.0004 per step;
+embedding is untouched because the index is the same. `k=8` costs 22% more
+than `k=5`.
+
+**Quality does not move with k.** Six questions (Q4-Q8) answer `Partially`
+at every k. The four that flip do so in both directions:
+
+| | k=5 | k=5 | k=6 | k=7 | k=8 |
+|---|---|---|---|---|---|
+| Q2 unauthorized software | Partially | Partially | Yes | Yes | Partially |
+| Q11 incident reporting | Partially | - | Partially | - | - |
+| Q15 wireless monitoring | Partially | Partially | Partially | - | Partially |
+| Q18 IoT asset inventory | - | - | - | - | Partially |
+| Q19 IAM system | Partially | Partially | - | - | - |
+
+Q18 answers only at `k=8`, where a passage ranked 8th finally reaches the
+model. Q19 stops answering from `k=6` on, even though the `k=5` evidence is
+still in front of the model: the extra passages dilute rather than help. And
+`k=7`, with more context than 6, answers fewer questions than either
+neighbour. The two `k=5` rows differ by one question on identical inputs, so
+again the spread between configs (6-9) is about the run-to-run noise.
+
+Kept at 5. It is the cheapest, and nothing above it shows a quality gain that
+survives the noise; a bigger k mostly buys longer prompts.

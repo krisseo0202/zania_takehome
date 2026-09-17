@@ -220,12 +220,12 @@ every quality claim above is a hand check rather than a measurement.
 
 ## Chunk-size comparison
 
-`examples/` holds six runs of the same 19 questions - `chunk_size` 500/1000/1500
-and, at 500, `chunk_overlap` 10/20/30% - with `examples/README.md` reading them.
-Short version: chunk size moves cost (smaller is cheaper, because `top_k` fixes
-the chunk count, not the chunk size), overlap barely moves it at all, and
-neither moves the answered/abstained split by more than the run-to-run
-variance. `chunk_size=500` is the default on the cost evidence, not on quality.
+`examples/` holds ten runs of the same 19 questions - `chunk_size` 500/1000/1500,
+`chunk_overlap` 10/20/30%, and `top_k` 5/6/7/8 - with `examples/README.md`
+reading them. Short version: chunk size and `top_k` move cost (smaller and
+fewer are cheaper; cost is linear in k), overlap barely moves it, and none of
+them moves the answered/abstained split by more than the run-to-run variance.
+`chunk_size=500, top_k=5` is the default on the cost evidence, not on quality.
 
 ## Limitations
 
