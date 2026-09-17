@@ -89,3 +89,38 @@ def test_empty_model_response_raises_instead_of_abstaining():
 def test_prompt_and_code_abstain_with_the_same_literal():
     # A configured FALLBACK must reach the model, or answers stop matching.
     assert SYSTEM_PROMPT.count(FALLBACK) == 2
+
+
+@pytest.mark.parametrize("raw", ["Data Not Available", "Data Not Available.", "data not available"])
+def test_whole_answer_abstentions_collapse_to_the_exact_literal(raw):
+    class VariantLLM:
+        def invoke(self, messages):
+            return AIMessage(raw)
+
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    assert answer_all(store, ["Q1"], VariantLLM())[0]["answer"] == FALLBACK
+
+
+def test_partial_answers_keep_their_unavailable_parts_verbatim():
+    # The guard must not swallow a real answer that marks one part unavailable.
+    partial = "APM: performed. EUM: not performed. DEM: Data Not Available"
+
+    class PartialLLM:
+        def invoke(self, messages):
+            return AIMessage(partial)
+
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    assert answer_all(store, ["Q1"], PartialLLM())[0]["answer"] == partial
+
+
+def test_prose_around_the_literal_is_not_silently_collapsed():
+    # An explanation plus the literal is a prompt failure, not an abstention:
+    # collapsing it would hide that the model ignored the instruction.
+    prose = "The excerpts do not mention a Wireless Security Policy.\n\nData Not Available"
+
+    class ProseLLM:
+        def invoke(self, messages):
+            return AIMessage(prose)
+
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    assert answer_all(store, ["Q1"], ProseLLM())[0]["answer"] == prose

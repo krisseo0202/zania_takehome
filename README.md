@@ -67,10 +67,19 @@ Without the server, the same pipeline from the command line:
 
 Output shape:
 
+Real output from `samples/sample_doc.json`, abridged:
+
 ```json
-{"document": "toy.json",
- "results": [{"question": "Which cloud provider hosts the service?", "answer": "AWS"}]}
+{"document": "sample_doc.json",
+ "results": [
+   {"question": "Which cloud provider hosts the service?", "answer": "Amazon Web Services (AWS)"},
+   {"question": "What is the incident notification SLA in hours?", "answer": "Data Not Available"},
+   {"question": "Which are performed: APM, EUM, and DEM?",
+    "answer": "APM is performed.\nEUM is not performed.\nDEM: Data Not Available."}]}
 ```
+
+The third answer is the one to look at: the document says EUM is `false` and
+says nothing at all about DEM, and those are different answers.
 
 ## Inputs
 
@@ -105,13 +114,30 @@ evidence. The collection is deleted when the run ends, including on error.
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest -q      # 52 tests, no API key, no network
+.venv/bin/python -m pytest -q      # 57 tests, no API key, no network
 ```
 
 Fake embeddings and stub models test the pipeline's contracts — ordering,
 deduplication, cleanup, abstention, provenance. They do not test retrieval
 quality or whether the real model abstains correctly; that needs the live run
 above and a labelled set.
+
+## Observed behaviour on the sample report
+
+On the 84-page Nave SOC 2 report with the 19 sample questions: 333 chunks
+indexed in 21 s, 19 answers in 15 s, about a cent. **18 of 19 abstained.**
+
+That is mostly correct, not a failure to find evidence. Retrieval was checked
+by hand and returned the right pages (business continuity → p82, incident
+response → p77-79, access control → p59-63), but a SOC 2 report describes
+audited controls, not questionnaire answers: it says a Business Continuity Plan
+exists and is tested, never that it is "available to authorized stakeholders".
+The prompt's "do not treat 'not stated' as 'no'" rule abstains on the gap.
+
+The one grounded answer (unauthorized software) traces to control CC6.8 on
+pages 68-69. Note that `sample_json.csv` answers a *different* document — it
+cites GCP and `Company_kb (1).json` — so it is not ground truth for this PDF,
+and no labelled set for this document exists yet.
 
 ## Limitations
 
