@@ -1,0 +1,18 @@
+# Secrets. Broad on purpose: a typo'd copy of .env must not be committable.
+.env
+.env.*
+!.env.example
+.nev.txt
+*.key
+
+.venv/
+__pycache__/
+.pytest_cache/
+*.ipynb_checkpoints
+
+# Challenge inputs: the challenge PDF contains an API key, the CSVs are sample
+# answer data, and the Nave report is a public third-party document (see README).
+Zania Interview_ Coding Challenge*.pdf
+Nave-SOC2-Type-2-Report.pdf
+sample_json*.csv
+Zania QA Bot — Design Spec.md

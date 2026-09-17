@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "provider": "Amazon Web Services (AWS)",
+    "primary_region": "us-east-1",
+    "backup_region": "us-west-2"
+  },
+  "incident_response": {
+    "policy": "Customers are notified after confirmation of an incident affecting customer data."
+  },
+  "monitoring": {
+    "APM": "Application Performance Monitoring is enabled.",
+    "EUM": false,
+    "open_incidents": 0
+  },
+  "security": {"storage": "Customer records are encrypted at rest with AES-256."}
+}

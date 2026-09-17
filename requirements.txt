@@ -1,0 +1,12 @@
+pypdf
+langchain-core
+langchain-openai
+langchain-text-splitters
+langchain-chroma
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+pytest
+httpx
+ipykernel
