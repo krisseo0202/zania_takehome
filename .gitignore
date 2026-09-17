@@ -8,6 +8,7 @@
 .venv/
 __pycache__/
 .pytest_cache/
+*.ipynb
 *.ipynb_checkpoints
 
 # Challenge inputs: the challenge PDF contains an API key, the CSVs are sample
