@@ -10,11 +10,10 @@ from uuid import uuid4
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 
-from config import settings
+from config import get_chat_model, get_embeddings, settings
 
 logger = logging.getLogger(__name__)  # the app entrypoint owns handler config
 
@@ -308,15 +307,25 @@ def answer_all(store, questions: list[str], llm) -> list[dict]:
 
 # --- whole request -----------------------------------------------------------
 
-def answer_document(
-    filename: str, document_bytes: bytes, questions_bytes: bytes, embeddings, llm
-) -> dict:
-    """One upload in, one response body out. Stateless: nothing survives the call.
+class DocumentQAService:
+    """Holds the model clients and runs one upload end to end.
 
-    The API route and the sample script both call this; tests pass fakes.
+    Built once per process; `answer_document` keeps no state between calls, so
+    concurrent requests are fine. Tests pass fake `embeddings` / `llm`.
     """
-    questions = parse_questions(questions_bytes)
-    chunks = chunk_documents(load_document(filename, document_bytes))
-    with open_index(chunks, embeddings) as store:
-        results = answer_all(store, questions, llm)
-    return {"document": filename, "results": results}
+
+    def __init__(self, embeddings, llm):
+        self.embeddings = embeddings
+        self.llm = llm
+
+    @classmethod
+    def from_settings(cls) -> "DocumentQAService":
+        """Real OpenAI clients: key checked, timeouts and retries bounded (config.py)."""
+        return cls(get_embeddings(), get_chat_model())
+
+    def answer_document(self, filename: str, document_bytes: bytes, questions_bytes: bytes) -> dict:
+        questions = parse_questions(questions_bytes)
+        chunks = chunk_documents(load_document(filename, document_bytes))
+        with open_index(chunks, self.embeddings) as store:
+            results = answer_all(store, questions, self.llm)
+        return {"document": filename, "results": results}

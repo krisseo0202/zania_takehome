@@ -5,7 +5,7 @@ import json
 import pytest
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
-from rag import answer_all, answer_document, build_index, chunk_documents, load_document, open_index, retrieve
+from rag import DocumentQAService, answer_all, build_index, chunk_documents, load_document, open_index, retrieve
 from tests.test_rag import TOY, StubLLM
 
 
@@ -98,29 +98,38 @@ def test_partial_indexing_failure_drops_its_own_collection(toy_chunks):
         build_index(toy_chunks, BrokenEmbeddings(size=64))
 
 
-def test_answer_document_runs_the_whole_pipeline(embeddings):
-    body = answer_document(
-        "toy.json", json.dumps(TOY).encode(), b'["Q1", "Q1"]', embeddings, StubLLM()
-    )
+def test_service_runs_the_whole_pipeline(embeddings):
+    service = DocumentQAService(embeddings, StubLLM())
+    body = service.answer_document("toy.json", json.dumps(TOY).encode(), b'["Q1", "Q1"]')
     assert body == {"document": "toy.json", "results": [
         {"question": "Q1", "answer": "A1"}, {"question": "Q1", "answer": "A1"},
     ]}
 
 
-def test_from_settings_fails_fast_without_an_api_key(monkeypatch):
+@pytest.fixture
+def api_key(monkeypatch):
     from pydantic import SecretStr
-    from config import settings
+    from config import get_chat_model, get_embeddings, settings
 
-    monkeypatch.setattr(settings, "openai_api_key", SecretStr(""))
+    def use(value):
+        monkeypatch.setattr(settings, "openai_api_key", SecretStr(value))
+        get_embeddings.cache_clear()
+        get_chat_model.cache_clear()
+    yield use
+    get_embeddings.cache_clear()
+    get_chat_model.cache_clear()
+
+
+def test_from_settings_fails_fast_without_an_api_key(api_key):
+    api_key("")
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         DocumentQAService.from_settings()
 
 
-def test_from_settings_builds_bounded_clients(monkeypatch):
-    from pydantic import SecretStr
+def test_from_settings_builds_bounded_clients(api_key):
     from config import settings
 
-    monkeypatch.setattr(settings, "openai_api_key", SecretStr("sk-test"))
+    api_key("sk-test")
     service = DocumentQAService.from_settings()  # constructs clients, no network
     assert service.llm.model_name == settings.chat_model
     assert service.llm.max_retries == settings.max_retries == service.embeddings.max_retries

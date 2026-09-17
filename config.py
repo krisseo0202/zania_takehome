@@ -16,9 +16,6 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")  # SecretStr: never prints itself
     chat_model: str = "gpt-4o-mini"
     embedding_model: str = "text-embedding-3-small"
-    request_timeout: float = 30  # seconds per OpenAI call
-    max_retries: int = 2
-    max_answer_tokens: int = 400
 
     chunk_size: int = 1000  # characters, not tokens
     chunk_overlap: int = 150

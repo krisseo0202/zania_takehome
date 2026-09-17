@@ -13,8 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from config import get_chat_model, get_embeddings
-from rag import answer_document, chunk_documents, load_document, open_index, parse_questions, retrieve
+from rag import DocumentQAService, chunk_documents, load_document, open_index, parse_questions, retrieve
 
 PREVIEW_CHARS = 200
 
@@ -23,7 +22,7 @@ def main(doc_path: str, questions_path: str, retrieval_only: bool = False) -> No
     logging.basicConfig(level=logging.INFO, format="%(levelname)-7s %(name)s: %(message)s")
 
     document = Path(doc_path)
-    embeddings = get_embeddings()
+    service = DocumentQAService.from_settings()
     if retrieval_only:
         questions = parse_questions(Path(questions_path).read_bytes())
         chunks = chunk_documents(load_document(document.name, document.read_bytes()))
@@ -35,9 +34,8 @@ def main(doc_path: str, questions_path: str, retrieval_only: bool = False) -> No
                     print(f"  [{passage.metadata['source_id']}] {text[:PREVIEW_CHARS]}")
         return
 
-    response = answer_document(
-        document.name, document.read_bytes(), Path(questions_path).read_bytes(),
-        embeddings, get_chat_model(),
+    response = service.answer_document(
+        document.name, document.read_bytes(), Path(questions_path).read_bytes()
     )
     print(json.dumps(response, indent=2))
 
