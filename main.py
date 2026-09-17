@@ -44,7 +44,14 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
 
     @app.get("/health")
     async def health():
-        return {"status": "ok"}
+        # fallback and max_file_mb are configurable, and the front end needs
+        # both to count abstentions and pre-check size. Serving them here
+        # keeps one source of truth instead of a second hardcoded copy.
+        return {
+            "status": "ok",
+            "fallback": settings.fallback,
+            "max_file_mb": settings.max_file_mb,
+        }
 
     @app.post("/answer")
     async def answer(questions_file: UploadFile, document_file: UploadFile):

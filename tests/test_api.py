@@ -21,7 +21,18 @@ def post(client, questions=b'["Q1", "Q2"]', document=None, filename="toy.json"):
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/health").json() == {
+        "status": "ok",
+        "fallback": settings.fallback,
+        "max_file_mb": settings.max_file_mb,
+    }
+
+
+def test_health_publishes_the_configured_fallback(client, monkeypatch):
+    # The front end filters answers on this literal; a config change must
+    # reach it, or it counts abstentions against a stale string.
+    monkeypatch.setattr(settings, "fallback", "No Evidence")
+    assert client.get("/health").json()["fallback"] == "No Evidence"
 
 
 def test_answer_returns_one_result_per_question_in_order(client):

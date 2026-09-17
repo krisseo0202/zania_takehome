@@ -111,6 +111,24 @@ evidence. The collection is deleted when the run ends, including on error.
 | `Data Not Available` as a literal | Deterministic, so callers can filter and count it, and tests can assert on it. |
 | Provider errors raise | A timeout must not be reported as missing evidence. Abstention means retrieval found nothing. |
 
+## Web front end (optional)
+
+`web/` is a small React page over the same API; the service mounts `web/dist`
+at `/` when that build exists, so the API alone needs none of it.
+
+```bash
+cd web && npm install && npm run build   # needs Node >= 20.19 (see web/.nvmrc)
+```
+
+Node 18 fails with a `node:util` `styleText` error: Vite 8 requires Node 20.19+
+and npm does not enforce `engines` by default, so the build dies mid-flight
+rather than up front. `web/.npmrc` sets `engine-strict=true` to make it refuse
+early instead.
+
+`/health` publishes `fallback` and `max_file_mb` so the page counts abstentions
+and pre-checks upload size against the running server's settings rather than a
+second hardcoded copy.
+
 ## Tests
 
 ```bash
