@@ -26,10 +26,19 @@ scripts/         run_sample.py, the CLI demo
 
 ## Setup
 
+Nothing to install but the key. Copy `.env.example` to `.env`, paste your
+OpenAI key into `OPENAI_API_KEY`, then:
+
+```bash
+docker compose up --build        # API on http://localhost:8000
+```
+
+Without Docker, or to run the tests and the CLI scripts, use a venv instead:
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env          # paste your OpenAI key into OPENAI_API_KEY
+.venv/bin/uvicorn main:app --port 8000
 ```
 
 The sample document is not in the repo. Download it next to this README:
@@ -40,12 +49,9 @@ curl -O https://getnave.com/assets2/docs/Nave-SOC2-Type-2-Report.pdf
 
 ## Run
 
+With the server up either way:
+
 ```bash
-.venv/bin/uvicorn main:app --port 8000
-
-# or, with no venv at all:
-cp .env.example .env && docker compose up --build
-
 curl -X POST http://localhost:8000/answer \
   -F "questions_file=@samples/questions.json" \
   -F "document_file=@Nave-SOC2-Type-2-Report.pdf"
