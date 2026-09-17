@@ -4,14 +4,12 @@ import json
 from pathlib import Path
 
 import pytest
+import tiktoken
 from fastapi.testclient import TestClient
 from langchain_core.embeddings import DeterministicFakeEmbedding
 from langchain_core.messages import AIMessage
 
-from fastapi.testclient import TestClient
-
 from app.loaders import chunk_documents, load_document
-from app.service import DocumentQAService
 from app.service import DocumentQAService
 
 NAVE_PDF = "Nave-SOC2-Type-2-Report.pdf"  # public sample, not in the repo
@@ -63,6 +61,19 @@ class CountingEmbeddings(DeterministicFakeEmbedding):
         return super().embed_query(text)
 
 
+
+
+class FakeEncoding:
+    """Whitespace tokens: tiktoken's real BPE file is a download, and the suite is offline."""
+
+    def encode(self, text):
+        return text.split()
+
+
+@pytest.fixture(autouse=True)
+def offline_tokenizer(monkeypatch):
+    monkeypatch.setattr(tiktoken, "encoding_for_model", lambda model: FakeEncoding())
+    monkeypatch.setattr(tiktoken, "get_encoding", lambda name: FakeEncoding())
 
 
 @pytest.fixture

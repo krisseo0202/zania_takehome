@@ -1,5 +1,6 @@
 """One upload end to end, and the production client wiring."""
 
+import logging
 import json
 
 import pytest
@@ -54,3 +55,18 @@ def test_sources_name_the_pages_or_sections_evidence_came_from(embeddings):
     assert sources, "an answered question must cite its evidence"
     assert all(s.startswith("json:") for s in sources)
     assert len(sources) == len(set(sources))  # deduplicated
+
+
+def test_embedding_tokens_are_estimated_when_the_tokenizer_cannot_download(monkeypatch, caplog):
+    import tiktoken
+    from app.service import _embedding_tokens
+    from langchain_core.documents import Document
+
+    def offline(*args):
+        raise ConnectionError("no route to host")
+
+    monkeypatch.setattr(tiktoken, "encoding_for_model", offline)
+    monkeypatch.setattr(tiktoken, "get_encoding", offline)
+    with caplog.at_level(logging.WARNING, logger="app.service"):
+        assert _embedding_tokens([Document("x" * 40)]) == 10  # ~4 chars per token
+    assert "estimating embedding tokens" in caplog.text

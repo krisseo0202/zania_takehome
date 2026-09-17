@@ -174,7 +174,7 @@ second hardcoded copy.
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest -q      # 57 tests, no API key, no network
+.venv/bin/python -m pytest -q      # 73 tests, no API key, no network (2 skip without the Nave PDF)
 ```
 
 Fake embeddings and stub models test the pipeline's contracts — ordering,
@@ -224,4 +224,5 @@ run-to-run variance, so those runs do not pick a winner.
   tells the model to treat excerpts as evidence, which is not a guarantee.
 - Dense retrieval only, so a question phrased unlike the document may miss.
 - Facts spread across many pages, and tables split across chunks, retrieve poorly.
-- No citations in the answer; page and path IDs stay in the logs.
+- Citations (`[page:12]`) are written by the model, not verified against the
+  excerpts; `sources` is the checked list of what it was shown.

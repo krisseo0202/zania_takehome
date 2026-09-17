@@ -1,12 +1,15 @@
-pypdf
-langchain-core
-langchain-openai
-langchain-text-splitters
-langchain-chroma
-fastapi
-uvicorn[standard]
-python-multipart
-pydantic-settings
-pytest
-httpx
-ipykernel
+# Direct dependencies, pinned to the versions the suite and live run were verified with.
+pypdf==6.19.0
+tiktoken==0.14.0
+langchain-core==1.6.3
+langchain-openai==1.6.2
+langchain-text-splitters==1.1.2
+langchain-chroma==1.1.0
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+python-multipart==0.0.32
+pydantic-settings==2.15.0
+
+# Tests
+pytest==9.1.1
+httpx==0.28.1

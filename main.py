@@ -166,8 +166,8 @@ def _require_suffix(upload: UploadFile, allowed: tuple[str, ...]) -> None:
 
 
 async def _read_limited(upload: UploadFile) -> bytes:
-    # ponytail: Starlette has already spooled the body; a Content-Length
-    # middleware would reject oversize uploads before parsing.
+    # Starlette has already spooled the whole body by now; a Content-Length
+    # middleware would be the way to reject oversize uploads before parsing.
     data = await upload.read()
     if len(data) > settings.max_file_mb * 1024 * 1024:
         raise HTTPException(413, f"{upload.filename}: exceeds {settings.max_file_mb} MB")

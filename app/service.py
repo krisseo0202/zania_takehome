@@ -19,11 +19,18 @@ def _embedding_tokens(chunks) -> int:
     The embeddings API returns no usage through LangChain, so this is counted
     locally with the model's own tokenizer rather than guessed at.
     """
+    texts = [chunk.page_content for chunk in chunks]
     try:
-        encoding = tiktoken.encoding_for_model(settings.embedding_model)
-    except Exception:  # unknown model name: fall back to the current default
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return sum(len(encoding.encode(chunk.page_content)) for chunk in chunks)
+        try:
+            encoding = tiktoken.encoding_for_model(settings.embedding_model)
+        except KeyError:  # unknown model name: the current default tokenizer
+            encoding = tiktoken.get_encoding("cl100k_base")
+    except Exception as exc:
+        # tiktoken downloads its BPE file on first use; offline, the estimate
+        # is the usual ~4 characters per token, and the cost line says so.
+        logger.warning("tokenizer unavailable (%s); estimating embedding tokens", exc)
+        return sum(len(text) // 4 for text in texts)
+    return sum(len(encoding.encode(text)) for text in texts)
 
 
 def estimate_cost_usd(input_tokens: int, output_tokens: int, embedding_tokens: int) -> float:
