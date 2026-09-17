@@ -66,30 +66,7 @@ def open_index(chunks: list[Document], embeddings):
         drop_index(store, name)
 
 
-def retrieve_scored(store, question: str, k: int | None = None) -> list[tuple[Document, float]]:
-    """Top-k chunks with their cosine relevance, best first."""
-    # Resolved per call, not frozen into a default at import time.
-    return store.similarity_search_with_relevance_scores(question, k=k or settings.top_k)
-
-
 def retrieve(store, question: str, k: int | None = None) -> list[Document]:
-    """Top-k *chunks* (not pages) above the score floor, same embedding model.
-
-    Returning nothing is a real answer: it means the document has no passage
-    close enough to the question, which the caller reports as an abstention
-    rather than sending weak context to the model.
-    """
-    floor = settings.score_floor
-    if floor <= 0:  # floor off: same single call as before, no scoring work
-        return store.similarity_search(question, k=k or settings.top_k)
-
-    scored = retrieve_scored(store, question, k)
-    kept = [doc for doc, score in scored if score >= floor]
-    if not kept and scored:
-        logger.info(
-            "no chunk above floor %.2f (best %.2f), abstaining on evidence",
-            floor, max(score for _, score in scored),
-        )
-    return kept
-
-
+    """Top-k *chunks* (not pages) by cosine similarity, same embedding model."""
+    # Resolved per call, not frozen into a default at import time.
+    return store.similarity_search(question, k=k or settings.top_k)

@@ -236,14 +236,6 @@ fewer are cheaper; cost is linear in k), overlap barely moves it, and none of
 them moves the answered/abstained split by more than the run-to-run variance.
 `chunk_size=500, top_k=5` is the default on the cost evidence, not on quality.
 
-## Retrieval score floor
-
-`SCORE_FLOOR` (default `0`, off) makes a question abstain without a model call
-when no retrieved chunk scores above it. On the sample report it is a cost
-lever worth ~24%, not a quality filter: answered and abstained questions
-overlap across almost the whole score range, so a floor cannot predict which
-questions are answerable. `examples/README.md` has the measured distribution.
-
 ## Limitations
 
 - No OCR: a scanned PDF with no text layer is rejected, not read.

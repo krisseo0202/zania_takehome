@@ -22,9 +22,6 @@ class Settings(BaseSettings):
     chunk_size: int = 500  # characters, not tokens
     chunk_overlap: int = 150
     top_k: int = 5
-    # Cosine relevance in [0, 1]. A question whose best chunk scores below this
-    # abstains without a model call. 0 disables the floor and keeps every hit.
-    score_floor: float = 0.0
 
     max_questions: int = 50
     max_concurrency: int = 5  # distinct questions answered at once; bounds the OpenAI rate
