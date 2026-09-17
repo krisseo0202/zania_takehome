@@ -9,13 +9,6 @@ interface QuestionListProps {
   progress: Record<number, QuestionProgress>;
 }
 
-const LABELS: Record<QuestionProgress['status'], string> = {
-  queued: 'queued',
-  generating: 'generating',
-  done: 'done',
-  abstain: 'abstain',
-};
-
 /** The questions as they land, so a long run shows work rather than a spinner. */
 export function QuestionList({ questions, progress }: QuestionListProps) {
   const finished = Object.keys(progress).length;
@@ -33,7 +26,7 @@ export function QuestionList({ questions, progress }: QuestionListProps) {
           return (
             <li key={i} className={`question-row question-row--${row.status}`}>
               <span className="question-row__index">{String(i + 1).padStart(2, '0')}</span>
-              <span className="question-row__status">{LABELS[row.status]}</span>
+              <span className="question-row__status">{row.status}</span>
               <span className="question-row__text">{question}</span>
               <span className="question-row__source">
                 {row.status === 'done' ? formatSources(row.sources) : ''}

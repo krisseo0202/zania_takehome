@@ -120,50 +120,55 @@ def answer_one(store, question: str, llm, label: str = "question", on_generating
     Questionnaire items can name customers and systems, so logs carry the
     position and DEBUG carries the text, for operators who opted in.
     """
+    start = time.perf_counter()
+    logger.debug("%s: %r", label, question)
     try:
-        start = time.perf_counter()
-        logger.debug("%s: %r", label, question)
-        passages = retrieve(store, question)
-        retrieved_ms = elapsed_ms(start)
-        if not passages:
-            logger.warning("%s: no passages retrieved, abstaining without a model call", label)
-            return Answer(FALLBACK)
-
-        # Announced here, not when the question was picked up: a question that
-        # finds no evidence abstains without ever reaching the model.
-        if on_generating:
-            on_generating()
-        response = llm.invoke([
-            SystemMessage(SYSTEM_PROMPT),
-            HumanMessage(f"Excerpts:\n{format_context(passages)}\n\nQuestion: {question}"),
-        ])
-        answer, confidence = _split_confidence(response.text.strip())
-        answer = _normalize_abstention(answer)
-        if not answer:
-            # A provider hiccup must surface as an error, never as missing evidence.
-            raise EmptyAnswer(f"model returned an empty answer for: {question}")
-        if answer == FALLBACK:
-            confidence = "low"
-
-        sources = _source_ids(passages)
-        # usage_metadata is absent on fake models and on providers that omit it.
-        usage = getattr(response, "usage_metadata", None) or {}
-        logger.info(
-            "%s: answered in %d ms (retrieval %d ms, %d passages %s)",
-            label, elapsed_ms(start), retrieved_ms, len(passages), sources,
-        )
-        return Answer(
-            text=answer,
-            confidence=confidence,
-            sources=sources,
-            input_tokens=usage.get("input_tokens", 0),
-            output_tokens=usage.get("output_tokens", 0),
-        )
-
-    except Exception:
-        # Name the position, not the text, before the error unwinds.
-        logger.exception("%s: failed", label)
+        return _answer_one(store, question, llm, label, on_generating, start)
+    except Exception as exc:
+        # Name the position so a concurrent failure is attributable. No
+        # exc_info: the route logs the traceback once, at the boundary.
+        logger.error("%s: failed: %s", label, exc)
         raise
+
+
+def _answer_one(store, question, llm, label, on_generating, start) -> Answer:
+    passages = retrieve(store, question)
+    retrieved_ms = elapsed_ms(start)
+    if not passages:
+        logger.warning("%s: no passages retrieved, abstaining without a model call", label)
+        return Answer(FALLBACK, ms=elapsed_ms(start))
+
+    # Announced here, not when the question was picked up: a question that
+    # finds no evidence abstains without ever reaching the model.
+    if on_generating:
+        on_generating()
+    response = llm.invoke([
+        SystemMessage(SYSTEM_PROMPT),
+        HumanMessage(f"Excerpts:\n{format_context(passages)}\n\nQuestion: {question}"),
+    ])
+    answer, confidence = _split_confidence(response.text.strip())
+    answer = _normalize_abstention(answer)
+    if not answer:
+        # A provider hiccup must surface as an error, never as missing evidence.
+        raise EmptyAnswer(f"model returned an empty answer for: {question}")
+    if answer == FALLBACK:
+        confidence = "low"
+
+    sources = _source_ids(passages)
+    # usage_metadata is absent on fake models and on providers that omit it.
+    usage = getattr(response, "usage_metadata", None) or {}
+    logger.info(
+        "%s: answered in %d ms (retrieval %d ms, %d passages %s)",
+        label, elapsed_ms(start), retrieved_ms, len(passages), sources,
+    )
+    return Answer(
+        text=answer,
+        confidence=confidence,
+        sources=sources,
+        input_tokens=usage.get("input_tokens", 0),
+        output_tokens=usage.get("output_tokens", 0),
+    )
+
 
 def answer_all(store, questions: list[str], llm, on_answer=None, on_generating=None) -> tuple[list[dict], dict]:
     """One model call per *distinct* question; output mirrors the input list.

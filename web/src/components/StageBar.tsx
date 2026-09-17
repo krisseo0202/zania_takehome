@@ -15,6 +15,17 @@ export interface StageProgress {
   rows?: Record<number, QuestionProgress>;
 }
 
+/** Apply one row state to every position an event names. */
+function markRows(
+  current: StageProgress,
+  event: StageEvent,
+  row: QuestionProgress,
+): Record<number, QuestionProgress> {
+  const rows = { ...(current.rows ?? {}) };
+  for (const position of event.positions ?? []) rows[position] = row;
+  return rows;
+}
+
 /** Fold a stage event into the progress state. */
 export function applyStage(current: StageProgress, event: StageEvent): StageProgress {
   switch (event.stage) {
@@ -31,25 +42,20 @@ export function applyStage(current: StageProgress, event: StageEvent): StageProg
       };
     case 'index':
       return { ...current, vectors: event.vectors, topK: event.top_k };
-    case 'generating': {
-      const rows = { ...(current.rows ?? {}) };
-      for (const position of event.positions ?? []) {
-        rows[position] = { status: 'generating' };
-      }
-      return { ...current, rows };
-    }
-    case 'answer': {
-      const rows = { ...(current.rows ?? {}) };
-      for (const position of event.positions ?? []) {
-        rows[position] = {
+    case 'generating':
+      return { ...current, rows: markRows(current, event, { status: 'generating' }) };
+    case 'answer':
+      return {
+        ...current,
+        answered: event.done,
+        total: event.total ?? current.total,
+        rows: markRows(current, event, {
           status: event.outcome ?? 'done',
           confidence: event.confidence,
           sources: event.sources,
           ms: event.ms,
-        };
-      }
-      return { ...current, answered: event.done, total: event.total ?? current.total, rows };
-    }
+        }),
+      };
     default:
       return current;
   }
