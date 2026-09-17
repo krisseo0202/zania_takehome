@@ -74,14 +74,19 @@ Real output from `samples/sample_doc.json`, abridged:
  "results": [
    {"question": "Which cloud provider hosts the service?",
     "answer": "Amazon Web Services (AWS)",
+    "confidence": "high",
     "sources": ["json:hosting", "json:security", "json:incident_response"]},
    {"question": "What is the incident notification SLA in hours?",
     "answer": "Data Not Available",
+    "confidence": "low",
     "sources": ["json:incident_response", "json:monitoring"]}],
  "usage": {"input_tokens": 1360, "output_tokens": 55, "embedding_tokens": 92,
            "estimated_cost_usd": 0.000239}}
 ```
 
+`confidence` is the model's own `high` / `medium` / `low` rating of how directly
+the excerpts state the answer; an abstention is always `low`. It is a
+self-report, useful for sorting review effort, not a calibrated probability.
 `sources` lists the passages **retrieved** for that question, best match first
 (`page:14`, `json:hosting`). It is the evidence put in front of the model, not
 a verified citation of what the answer used, and it is present even when the

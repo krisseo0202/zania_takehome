@@ -23,7 +23,7 @@ def test_duplicate_questions_are_answered_once_but_returned_twice():
 def test_empty_retrieval_abstains_without_a_model_call():
     llm = StubLLM()
     results, _ = answer_all(StubStore([]), ["Q1"], llm)
-    assert results == [{"question": "Q1", "answer": FALLBACK, "sources": []}]
+    assert results == [{"question": "Q1", "answer": FALLBACK, "confidence": "low", "sources": []}]
     assert llm.calls == []
 
 
@@ -124,3 +124,19 @@ def test_prose_around_the_literal_is_not_silently_collapsed():
 
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
     assert answer_all(store, ["Q1"], ProseLLM())[0][0]["answer"] == prose
+
+
+@pytest.mark.parametrize("raw,answer,confidence", [
+    ("Yes. AWS [page:3]\nConfidence: high", "Yes. AWS [page:3]", "high"),
+    ("Partially. No SLA stated.\n\nConfidence: Medium.", "Partially. No SLA stated.", "medium"),
+    ("AWS", "AWS", "low"),  # no confidence line: the format was ignored, report low
+    ("Data Not Available\nConfidence: high", FALLBACK, "low"),  # abstentions are always low
+])
+def test_confidence_line_is_split_off_the_answer(raw, answer, confidence):
+    class FixedLLM:
+        def invoke(self, messages):
+            return AIMessage(raw)
+
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    row = answer_all(store, ["Q1"], FixedLLM())[0][0]
+    assert (row["answer"], row["confidence"]) == (answer, confidence)
