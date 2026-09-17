@@ -12,6 +12,10 @@ from app.util import elapsed_ms
 
 logger = logging.getLogger(__name__)
 
+
+class EmptyAnswer(RuntimeError):
+    """The model returned nothing. A provider fault, never missing evidence."""
+
 FALLBACK = settings.fallback  # the literal that callers filter and tests assert on
 
 # Interpolated, never retyped: the prompt and the code must abstain with the
@@ -56,7 +60,7 @@ def answer_one(store, question: str, llm, label: str = "question") -> str:
     answer = response.text.strip()  # .text, not .content: content may be blocks
     if not answer:
         # A provider hiccup must surface as an error, never as missing evidence.
-        raise RuntimeError(f"model returned an empty answer for: {question}")
+        raise EmptyAnswer(f"model returned an empty answer for: {question}")
 
     logger.info(
         "%s: answered in %d ms (retrieval %d ms, %d passages %s)",

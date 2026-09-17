@@ -6,11 +6,12 @@ document. A question the document does not cover is answered
 
 ## Status
 
-The pipeline is complete and tested: load → chunk → index → retrieve → answer.
-The HTTP API is not built yet, so the entry point today is a CLI script.
-`DocumentQAService.answer_document()` is the single call a route will wrap.
+Complete and tested: load → chunk → index → retrieve → answer, behind a
+FastAPI service. Answer quality has been read by hand, not measured against a
+labelled set.
 
 ```text
+main.py          FastAPI app: POST /answer, GET /health
 app/
   config.py      settings from .env, OpenAI clients with timeouts and retries
   loaders.py     uploads -> Documents: parse questions, read PDF/JSON, chunk
@@ -36,6 +37,25 @@ curl -O https://getnave.com/assets2/docs/Nave-SOC2-Type-2-Report.pdf
 ```
 
 ## Run
+
+```bash
+.venv/bin/uvicorn main:app --port 8000
+
+curl -X POST http://localhost:8000/answer \
+  -F "questions_file=@samples/questions.json" \
+  -F "document_file=@Nave-SOC2-Type-2-Report.pdf"
+```
+
+| Endpoint | Method | In | Out |
+|---|---|---|---|
+| `/answer` | POST, multipart | `questions_file` (JSON), `document_file` (PDF or JSON) | `200` question/answer pairs |
+| `/health` | GET | — | `{"status": "ok"}` |
+
+Errors are explicit: `400` unreadable document or questions, `413` upload over
+`MAX_FILE_MB`, `422` a missing form field, `502` OpenAI failed after its
+bounded retries. A provider failure is never reported as `Data Not Available`.
+
+Without the server, the same pipeline from the command line:
 
 ```bash
 # Inspect what retrieval returns, before any chat model is involved.
@@ -85,7 +105,7 @@ evidence. The collection is deleted when the run ends, including on error.
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest -q      # 40 tests, no API key, no network
+.venv/bin/python -m pytest -q      # 52 tests, no API key, no network
 ```
 
 Fake embeddings and stub models test the pipeline's contracts — ordering,
