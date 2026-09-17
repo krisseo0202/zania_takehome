@@ -1,81 +1,75 @@
-import pytest
-pytest.importorskip("main", reason="HTTP layer not implemented yet")
+"""HTTP layer: status codes and response shape. No network, ever."""
 
-"""HTTP layer: status codes and response shape. No network, ever.
-
-The `client` fixture (tests/conftest.py) wires in the same fakes as
-test_index.py through `create_app(service=...)`; only the 502 test below
-builds its own app, since it needs a service that raises instead of answers.
-"""
-
-import io
 import json
 
 import httpx
 import openai
+import pytest
 from fastapi.testclient import TestClient
 
-from main import MAX_FILE_MB, create_app
-
-TOY_DOC = json.dumps({"hosting": {"provider": "AWS"}}).encode()
-QUESTIONS = json.dumps(["Q1", "Q2"]).encode()
-
-
-def _files(questions=QUESTIONS, doc_name="toy.json", doc_bytes=TOY_DOC):
-    return {
-        "questions_file": ("questions.json", io.BytesIO(questions), "application/json"),
-        "document_file": (doc_name, io.BytesIO(doc_bytes), "application/octet-stream"),
-    }
+from app.config import settings
+from main import create_app
+from tests.conftest import NAVE_PDF, TOY, requires_nave_pdf
 
 
-def test_health_is_ok(client):
-    resp = client.get("/health")
-    assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+def post(client, questions=b'["Q1", "Q2"]', document=None, filename="toy.json"):
+    document = document if document is not None else json.dumps(TOY).encode()
+    return client.post("/answer", files={
+        "questions_file": ("questions.json", questions, "application/json"),
+        "document_file": (filename, document, "application/octet-stream"),
+    })
 
 
-def test_answer_happy_path_preserves_order_and_count(client):
-    resp = client.post("/answer", files=_files())
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["document"] == "toy.json"
-    assert [r["question"] for r in body["results"]] == ["Q1", "Q2"]
-    assert len(body["results"]) == 2
+def test_health(client):
+    assert client.get("/health").json() == {"status": "ok"}
 
 
-def test_unsupported_document_extension_is_400(client):
-    resp = client.post("/answer", files=_files(doc_name="doc.txt", doc_bytes=b"hello"))
-    assert resp.status_code == 400
-    assert "detail" in resp.json()
+def test_answer_returns_one_result_per_question_in_order(client):
+    res = post(client)
+    assert res.status_code == 200
+    assert res.json() == {"document": "toy.json", "results": [
+        {"question": "Q1", "answer": "A1"}, {"question": "Q2", "answer": "A2"},
+    ]}
 
 
-def test_malformed_questions_json_is_400(client):
-    resp = client.post("/answer", files=_files(questions=b"not json"))
-    assert resp.status_code == 400
-    assert "detail" in resp.json()
+@requires_nave_pdf
+def test_real_pdf_and_sample_questions_round_trip(client):
+    with open(NAVE_PDF, "rb") as fh, open("samples/questions.json", "rb") as qs:
+        pdf, questions = fh.read(), qs.read()
+    res = post(client, questions=questions, document=pdf, filename=NAVE_PDF)
+    assert res.status_code == 200
+    assert len(res.json()["results"]) == len(json.loads(questions))
 
 
-def test_empty_questions_list_is_400(client):
-    resp = client.post("/answer", files=_files(questions=b"[]"))
-    assert resp.status_code == 400
-    assert "detail" in resp.json()
+@pytest.mark.parametrize("kwargs", [
+    dict(questions=b"[]"),                        # empty question list
+    dict(questions=b"not json"),                  # unreadable questions
+    dict(document=b"hello", filename="doc.txt"),  # unsupported document type
+    dict(document=b"nope", filename="doc.pdf"),   # unreadable PDF
+])
+def test_bad_input_is_400(client, kwargs):
+    res = post(client, **kwargs)
+    assert res.status_code == 400
+    assert res.json()["detail"]
 
 
-def test_oversize_upload_is_413(client):
-    oversize = b"0" * (MAX_FILE_MB * 1024 * 1024 + 1)
-    resp = client.post("/answer", files=_files(doc_bytes=oversize))
-    assert resp.status_code == 413
-    assert "detail" in resp.json()
+def test_missing_file_is_422(client):
+    res = client.post("/answer", files={"questions_file": ("q.json", b'["Q1"]')})
+    assert res.status_code == 422
+
+
+def test_oversize_upload_is_413(client, monkeypatch):
+    monkeypatch.setattr(settings, "max_file_mb", 0)
+    res = post(client)
+    assert res.status_code == 413
+    assert "exceeds 0 MB" in res.json()["detail"]
 
 
 def test_provider_failure_is_502():
-    class BoomService:
+    class DownService:
         def answer_document(self, filename, document_bytes, questions_bytes):
-            raise openai.APIConnectionError(
-                request=httpx.Request("POST", "https://api.openai.com/v1/embeddings")
-            )
+            raise openai.APIConnectionError(request=httpx.Request("POST", "https://api.openai.com"))
 
-    client = TestClient(create_app(service=BoomService()))
-    resp = client.post("/answer", files=_files())
-    assert resp.status_code == 502
-    assert "detail" in resp.json()
+    res = post(TestClient(create_app(service=DownService())))
+    assert res.status_code == 502
+    assert "provider failed" in res.json()["detail"]

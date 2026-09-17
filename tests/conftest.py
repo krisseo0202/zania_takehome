@@ -4,10 +4,15 @@ import json
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from langchain_core.embeddings import DeterministicFakeEmbedding
 from langchain_core.messages import AIMessage
 
+from fastapi.testclient import TestClient
+
 from app.loaders import chunk_documents, load_document
+from app.service import DocumentQAService
+from app.service import DocumentQAService
 
 NAVE_PDF = "Nave-SOC2-Type-2-Report.pdf"  # public sample, not in the repo
 
@@ -84,3 +89,19 @@ def api_key(monkeypatch):
     get_chat_model.cache_clear()
 
 
+
+
+@pytest.fixture
+def client(embeddings):
+    """The real app, with fakes swapped in for the two things that cost money."""
+    from main import create_app
+
+    return TestClient(create_app(service=DocumentQAService(embeddings, StubLLM())))
+
+
+@pytest.fixture
+def client():
+    from main import create_app
+
+    service = DocumentQAService(DeterministicFakeEmbedding(size=64), StubLLM())
+    return TestClient(create_app(service=service))
