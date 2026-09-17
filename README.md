@@ -49,7 +49,8 @@ curl -X POST http://localhost:8000/answer \
 | Endpoint | Method | In | Out |
 |---|---|---|---|
 | `/answer` | POST, multipart | `questions_file` (JSON), `document_file` (PDF or JSON) | `200` question/answer pairs |
-| `/health` | GET | — | `{"status": "ok"}` |
+| `/answer/stream` | POST, multipart | same two files | `200` NDJSON, one stage per line, then the same body |
+| `/health` | GET | — | status plus the settings in force |
 
 Errors are explicit: `400` unreadable document or questions, `413` upload over
 `MAX_FILE_MB`, `422` a missing form field, `502` OpenAI failed after its
@@ -131,6 +132,26 @@ evidence. The collection is deleted when the run ends, including on error.
 | One call per *distinct* question | Repeated questions are common in questionnaires and cost nothing to reuse. |
 | `Data Not Available` as a literal | Deterministic, so callers can filter and count it, and tests can assert on it. |
 | Provider errors raise | A timeout must not be reported as missing evidence. Abstention means retrieval found nothing. |
+
+## Streaming progress
+
+`/answer/stream` does the same work as `/answer` and reports it stage by stage,
+one JSON object per line:
+
+```text
+{"stage": "questions", "count": 5}
+{"stage": "load", "sections": 84}
+{"stage": "chunk", "chunks": 333, "chunk_size": 1000, "chunk_overlap": 150}
+{"stage": "index", "vectors": 333, "top_k": 5}
+{"stage": "answer", "done": 1, "total": 19}
+{"stage": "done", "result": { ... same body as /answer ... }}
+```
+
+Every stage is emitted **after** it finishes, so the progress bar reports work
+that happened rather than work that is hoped for. A failure arrives as
+`{"stage": "error", "status": 400, ...}` instead of a partial result. NDJSON
+rather than server-sent events, because `EventSource` is GET-only and cannot
+carry the upload.
 
 ## Web front end (optional)
 

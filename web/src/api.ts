@@ -1,5 +1,5 @@
 import { DATA_NOT_AVAILABLE, MAX_FILE_BYTES } from './constants';
-import type { AnswerResponse, ApiErrorBody, ServerConfig } from './types';
+import type { AnswerResponse, ApiErrorBody, ServerConfig, StageEvent } from './types';
 
 /** An error response from the API itself: {"detail": "..."} with a status code. */
 export class ApiRequestError extends Error {
@@ -78,4 +78,52 @@ async function readErrorDetail(response: Response): Promise<string> {
     // Response body wasn't JSON (e.g. a proxy error page); fall through.
   }
   return `Request failed with status ${response.status}`;
+}
+
+
+/** POST the two files and report each pipeline stage as the server finishes it.
+ *
+ * NDJSON rather than EventSource: EventSource is GET-only and cannot carry an
+ * upload. Returns the final response; throws ApiRequestError on an error event.
+ */
+export async function submitAnswerStreaming(
+  questionsFile: File,
+  documentFile: File,
+  onStage: (event: StageEvent) => void,
+  signal?: AbortSignal,
+): Promise<AnswerResponse> {
+  const body = new FormData();
+  body.append('questions_file', questionsFile);
+  body.append('document_file', documentFile);
+
+  const response = await fetch('/answer/stream', { method: 'POST', body, signal });
+  if (!response.ok || !response.body) {
+    throw new ApiRequestError(response.status, await readErrorDetail(response));
+  }
+
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  let result: AnswerResponse | null = null;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += value;
+
+    // Keep the trailing partial line: a chunk can split a JSON object.
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as StageEvent;
+      if (event.stage === 'error') {
+        throw new ApiRequestError(event.status ?? 500, event.detail ?? 'Request failed');
+      }
+      if (event.stage === 'done') result = event.result ?? null;
+      else onStage(event);
+    }
+  }
+
+  if (!result) throw new ApiRequestError(502, 'Stream ended before the answers arrived');
+  return result;
 }

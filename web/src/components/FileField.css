@@ -82,3 +82,26 @@
   outline-offset: 2px;
   border-radius: 3px;
 }
+
+/* Drag and drop is an alternative to the picker, never the only way in:
+   the file input keeps working for keyboard and screen reader users. */
+.file-field {
+  transition: background-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.file-field--dragging {
+  background: var(--color-border-row);
+  box-shadow: inset 0 0 0 1px var(--color-text);
+}
+
+.file-field__hint {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  margin-left: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-field {
+    transition: none;
+  }
+}

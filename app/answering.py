@@ -154,7 +154,7 @@ def answer_one(store, question: str, llm, label: str = "question") -> Answer:
     )
 
 
-def answer_all(store, questions: list[str], llm) -> tuple[list[dict], dict]:
+def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[dict], dict]:
     """One model call per *distinct* question; output mirrors the input list.
 
     [Q1, Q2, Q1] costs two calls and returns [A1, A2, A1]. Returns the result
@@ -177,6 +177,8 @@ def answer_all(store, questions: list[str], llm) -> tuple[list[dict], dict]:
                 raise
 
         answered = cache[key]
+        if on_answer:
+            on_answer(position, len(questions))
         results.append({
             "question": question,
             "answer": answered.text,

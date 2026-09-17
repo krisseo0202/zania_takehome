@@ -3,7 +3,7 @@ import type { AnswerResponse } from '../types';
 import type { Phase } from '../App';
 import { ErrorPanel, type ErrorInfo } from './ErrorPanel';
 import { FilterChips, type FilterId } from './FilterChips';
-import { ProgressBar } from './ProgressBar';
+import { StageBar, type StageProgress } from './StageBar';
 import { ResultsTable } from './ResultsTable';
 import { SummaryStrip } from './SummaryStrip';
 import './ResultsSection.css';
@@ -13,6 +13,7 @@ interface ResultsSectionProps {
   error: ErrorInfo | null;
   result: AnswerResponse | null;
   elapsedMs: number | null;
+  progress: StageProgress;
   /** The exact abstention literal, as published by /health. */
   fallback: string;
   filter: FilterId;
@@ -29,6 +30,7 @@ export function ResultsSection({
   error,
   result,
   elapsedMs,
+  progress,
   fallback,
   filter,
   onFilterChange,
@@ -42,7 +44,7 @@ export function ResultsSection({
         <h2 className="visually-hidden" tabIndex={-1} ref={headingRef}>
           Running
         </h2>
-        <ProgressBar />
+        <StageBar progress={progress} />
       </section>
     );
   }

@@ -34,3 +34,21 @@ export interface ServerConfig {
   /** "gpt-4o-mini · text-embedding-3-small · k=5 · temp 0", from the server. */
   modelLine: string;
 }
+
+
+/** One line of /answer/stream. Every stage is emitted after it completes. */
+export interface StageEvent {
+  stage: 'questions' | 'load' | 'chunk' | 'index' | 'answer' | 'done' | 'error';
+  count?: number;
+  sections?: number;
+  chunks?: number;
+  chunk_size?: number;
+  chunk_overlap?: number;
+  vectors?: number;
+  top_k?: number;
+  done?: number;
+  total?: number;
+  result?: AnswerResponse;
+  status?: number;
+  detail?: string;
+}

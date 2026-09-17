@@ -91,3 +91,35 @@ def test_provider_failure_is_502():
     res = post(TestClient(create_app(service=DownService())))
     assert res.status_code == 502
     assert "provider failed" in res.json()["detail"]
+
+
+def _stream_events(client, questions=b'["Q1", "Q2"]', document=None, filename="toy.json"):
+    document = document if document is not None else json.dumps(TOY).encode()
+    files = {
+        "questions_file": ("questions.json", questions, "application/json"),
+        "document_file": (filename, document, "application/octet-stream"),
+    }
+    with client.stream("POST", "/answer/stream", files=files) as res:
+        assert res.status_code == 200
+        return [json.loads(line) for line in res.iter_lines() if line]
+
+
+def test_stream_reports_each_stage_then_the_result(client):
+    events = _stream_events(client)
+    stages = [e["stage"] for e in events]
+    assert stages[:4] == ["questions", "load", "chunk", "index"]
+    assert stages[-1] == "done"
+    # Answer progress counts up to the total, one event per question.
+    answers = [e for e in events if e["stage"] == "answer"]
+    assert [e["done"] for e in answers] == list(range(1, len(answers) + 1))
+    assert all(e["total"] == 2 for e in answers)
+    # The final event carries exactly what /answer would have returned.
+    assert events[-1]["result"]["document"] == "toy.json"
+    assert len(events[-1]["result"]["results"]) == 2
+
+
+def test_stream_reports_a_bad_upload_as_an_error_event(client):
+    events = _stream_events(client, filename="doc.txt", document=b"hello")
+    assert events[-1]["stage"] == "error"
+    assert events[-1]["status"] == 400
+    assert "done" not in [e["stage"] for e in events]

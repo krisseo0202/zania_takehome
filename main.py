@@ -7,7 +7,9 @@ field (FastAPI's own), 502 OpenAI failed after the bounded retries.
 """
 
 import asyncio
+import json
 import logging
+import queue
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,6 +17,7 @@ from pathlib import Path
 import openai
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.answering import EmptyAnswer
@@ -80,6 +83,61 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
         logger.info("%s: %d answers in %d ms",
                     filename, len(body["results"]), elapsed_ms(start))
         return body
+
+    @app.post("/answer/stream")
+    async def answer_stream(questions_file: UploadFile, document_file: UploadFile):
+        """Same work as /answer, reported stage by stage as NDJSON.
+
+        One JSON object per line: {"stage": ..., ...} while running, then a
+        final {"stage": "done", "result": {...}} or {"stage": "error", ...}.
+        Every stage is emitted after it completes, so the bar reports progress
+        that happened rather than progress that is hoped for.
+        """
+        questions = await _read_limited(questions_file)
+        document = await _read_limited(document_file)
+        filename = document_file.filename or "document"
+
+        events: queue.Queue = queue.Queue()
+        FINISHED = object()
+
+        def run():
+            start = time.perf_counter()
+            try:
+                body = app.state.service.answer_document(
+                    filename, document, questions,
+                    on_progress=lambda stage, detail: events.put({"stage": stage, **detail}),
+                )
+                logger.info("%s: %d answers in %d ms (streamed)",
+                            filename, len(body["results"]), elapsed_ms(start))
+                events.put({"stage": "done", "result": body})
+            except ValueError as exc:
+                events.put({"stage": "error", "status": 400, "detail": str(exc)})
+            except (openai.APIError, EmptyAnswer) as exc:
+                logger.exception("%s: provider failed", filename)
+                events.put({"stage": "error", "status": 502,
+                            "detail": f"language model provider failed: {exc}"})
+            except Exception as exc:
+                logger.exception("%s: unexpected failure", filename)
+                events.put({"stage": "error", "status": 500, "detail": str(exc)})
+            finally:
+                events.put(FINISHED)
+
+        async def stream():
+            task = asyncio.create_task(asyncio.to_thread(run))
+            try:
+                while True:
+                    event = await asyncio.to_thread(events.get)
+                    if event is FINISHED:
+                        break
+                    yield json.dumps(event) + "\n"
+            finally:
+                await task  # never leave the worker running past the response
+
+        # no-store and no-transform: a buffering proxy would defeat the point.
+        return StreamingResponse(stream(), media_type="application/x-ndjson", headers={
+            "Cache-Control": "no-store, no-transform",
+            "X-Accel-Buffering": "no",
+        })
 
     if DIST_DIR.exists():
         # Mounted last so the SPA catch-all can never shadow /health or /answer.

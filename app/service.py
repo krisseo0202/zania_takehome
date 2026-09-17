@@ -1,6 +1,7 @@
 """One upload in, one response body out."""
 
 import logging
+from collections.abc import Callable
 
 import tiktoken
 
@@ -51,13 +52,42 @@ class DocumentQAService:
         """Real OpenAI clients: key checked, timeouts and retries bounded (config.py)."""
         return cls(get_embeddings(), get_chat_model())
 
-    def answer_document(self, filename: str, document_bytes: bytes, questions_bytes: bytes) -> dict:
+    def answer_document(
+        self,
+        filename: str,
+        document_bytes: bytes,
+        questions_bytes: bytes,
+        on_progress: Callable[[str, dict], None] | None = None,
+    ) -> dict:
+        """Run one upload end to end.
+
+        `on_progress(stage, detail)` is called as each stage completes, for
+        callers that stream progress. It reports what actually happened, so a
+        stage is announced after it finishes, never optimistically.
+        """
+        emit = on_progress or (lambda stage, detail: None)
+
         questions = parse_questions(questions_bytes)
-        chunks = chunk_documents(load_document(filename, document_bytes))
+        emit("questions", {"count": len(questions)})
+
+        documents = load_document(filename, document_bytes)
+        emit("load", {"sections": len(documents)})
+
+        chunks = chunk_documents(documents)
+        emit("chunk", {
+            "chunks": len(chunks),
+            "chunk_size": settings.chunk_size,
+            "chunk_overlap": settings.chunk_overlap,
+        })
+
         embedding_tokens = _embedding_tokens(chunks)
 
         with open_index(chunks, self.embeddings) as store:
-            results, usage = answer_all(store, questions, self.llm)
+            emit("index", {"vectors": len(chunks), "top_k": settings.top_k})
+            results, usage = answer_all(
+                store, questions, self.llm,
+                on_answer=lambda done, total: emit("answer", {"done": done, "total": total}),
+            )
 
         return {
             "document": filename,

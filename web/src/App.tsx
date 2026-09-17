@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ApiRequestError, DEFAULT_CONFIG, fetchServerConfig, submitAnswer } from './api';
+import { ApiRequestError, DEFAULT_CONFIG, fetchServerConfig, submitAnswerStreaming } from './api';
 import './App.css';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
@@ -7,6 +7,7 @@ import type { ErrorInfo } from './components/ErrorPanel';
 import type { FilterId } from './components/FilterChips';
 import { ResultsSection } from './components/ResultsSection';
 import { RunForm } from './components/RunForm';
+import { applyStage, type StageProgress } from './components/StageBar';
 import { countQuestionsLoosely } from './questionsPreview';
 import { toCsv } from './csv';
 import { downloadBlob } from './download';
@@ -33,6 +34,7 @@ export default function App() {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [config, setConfig] = useState<ServerConfig>(DEFAULT_CONFIG);
+  const [progress, setProgress] = useState<StageProgress>({});
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // The server owns the fallback literal and the size limit; both are
@@ -95,10 +97,13 @@ export default function App() {
     setPhase('running');
     setError(null);
     setResult(null);
+    setProgress({});
 
     const start = performance.now();
     try {
-      const response = await submitAnswer(questionsFile, documentFile);
+      const response = await submitAnswerStreaming(questionsFile, documentFile, (event) =>
+        setProgress((current) => applyStage(current, event)),
+      );
       setElapsedMs(performance.now() - start);
       setResult(response);
       setPhase('success');
@@ -141,6 +146,7 @@ export default function App() {
         error={error}
         result={result}
         elapsedMs={elapsedMs}
+        progress={progress}
         fallback={config.fallback}
         filter={filter}
         onFilterChange={setFilter}
