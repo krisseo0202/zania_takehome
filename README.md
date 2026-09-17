@@ -208,6 +208,14 @@ document (it cites `Company_kb (1).json`), so its answers are not achievable
 from this report. No labelled set for this document exists yet, which is why
 every quality claim above is a hand check rather than a measurement.
 
+## Chunk-size comparison
+
+`examples/` holds the same 19 questions run at `chunk_size` 500, 1000 and 1500
+with `top_k=5`, plus `examples/README.md` reading them. Short version: cost
+falls as chunk size falls (k fixes the chunk count, not the chunk size, so chat
+input shrinks), and the answered/abstained split moves by less than the
+run-to-run variance, so those runs do not pick a winner.
+
 ## Limitations
 
 - No OCR: a scanned PDF with no text layer is rejected, not read.
