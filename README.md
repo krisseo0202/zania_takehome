@@ -72,11 +72,21 @@ Real output from `samples/sample_doc.json`, abridged:
 ```json
 {"document": "sample_doc.json",
  "results": [
-   {"question": "Which cloud provider hosts the service?", "answer": "Amazon Web Services (AWS)"},
-   {"question": "What is the incident notification SLA in hours?", "answer": "Data Not Available"},
-   {"question": "Which are performed: APM, EUM, and DEM?",
-    "answer": "APM is performed.\nEUM is not performed.\nDEM: Data Not Available."}]}
+   {"question": "Which cloud provider hosts the service?",
+    "answer": "Amazon Web Services (AWS)",
+    "sources": ["json:hosting", "json:security", "json:incident_response"]},
+   {"question": "What is the incident notification SLA in hours?",
+    "answer": "Data Not Available",
+    "sources": ["json:incident_response", "json:monitoring"]}],
+ "usage": {"input_tokens": 1360, "output_tokens": 55, "embedding_tokens": 92,
+           "estimated_cost_usd": 0.000239}}
 ```
+
+`sources` lists the passages **retrieved** for that question, best match first
+(`page:14`, `json:hosting`). It is the evidence put in front of the model, not
+a verified citation of what the answer used, and it is present even when the
+answer abstains. `usage.estimated_cost_usd` applies the list prices in
+`config.py` to real token counts: an estimate, not a bill.
 
 The third answer is the one to look at: the document says EUM is `false` and
 says nothing at all about DEM, and those are different answers.

@@ -22,3 +22,4 @@ Zania QA Bot — Design Spec.md
 web/node_modules/
 web/dist/
 web/.vite/
+.gstack/

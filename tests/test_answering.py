@@ -14,7 +14,7 @@ from tests.conftest import StubLLM, StubStore
 def test_duplicate_questions_are_answered_once_but_returned_twice():
     store = StubStore([Document("AWS", metadata={"source_id": "json:hosting"})])
     llm = StubLLM()
-    results = answer_all(store, ["Q1", "Q2", "Q1"], llm)
+    results, _ = answer_all(store, ["Q1", "Q2", "Q1"], llm)
     assert [r["question"] for r in results] == ["Q1", "Q2", "Q1"]
     assert [r["answer"] for r in results] == ["A1", "A2", "A1"]
     assert len(llm.calls) == 2  # the repeat costs nothing
@@ -22,8 +22,8 @@ def test_duplicate_questions_are_answered_once_but_returned_twice():
 
 def test_empty_retrieval_abstains_without_a_model_call():
     llm = StubLLM()
-    results = answer_all(StubStore([]), ["Q1"], llm)
-    assert results == [{"question": "Q1", "answer": FALLBACK}]
+    results, _ = answer_all(StubStore([]), ["Q1"], llm)
+    assert results == [{"question": "Q1", "answer": FALLBACK, "sources": []}]
     assert llm.calls == []
 
 
@@ -32,7 +32,7 @@ def test_logs_report_counts_and_timing(caplog):
     with caplog.at_level(logging.INFO, logger="app.answering"):
         answer_all(store, ["Q1", "Q2", "Q1"], StubLLM())
     summary = caplog.messages[-1]
-    assert "answered 3 questions (2 distinct, 0 abstained) in" in summary
+    assert "answered 3 questions (2 distinct, 0 abstained, 0+0 tokens) in" in summary
 
 
 def test_failures_are_logged_with_the_question_and_re_raised(caplog):
@@ -73,7 +73,7 @@ def test_answer_survives_a_block_style_model_response():
             return AIMessage([{"type": "text", "text": "AWS"}])
 
     store = StubStore([Document("AWS", metadata={"source_id": "json:hosting"})])
-    assert answer_all(store, ["Where?"], BlockLLM())[0]["answer"] == "AWS"
+    assert answer_all(store, ["Where?"], BlockLLM())[0][0]["answer"] == "AWS"
 
 
 def test_empty_model_response_raises_instead_of_abstaining():
@@ -98,7 +98,7 @@ def test_whole_answer_abstentions_collapse_to_the_exact_literal(raw):
             return AIMessage(raw)
 
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
-    assert answer_all(store, ["Q1"], VariantLLM())[0]["answer"] == FALLBACK
+    assert answer_all(store, ["Q1"], VariantLLM())[0][0]["answer"] == FALLBACK
 
 
 def test_partial_answers_keep_their_unavailable_parts_verbatim():
@@ -110,7 +110,7 @@ def test_partial_answers_keep_their_unavailable_parts_verbatim():
             return AIMessage(partial)
 
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
-    assert answer_all(store, ["Q1"], PartialLLM())[0]["answer"] == partial
+    assert answer_all(store, ["Q1"], PartialLLM())[0][0]["answer"] == partial
 
 
 def test_prose_around_the_literal_is_not_silently_collapsed():
@@ -123,4 +123,4 @@ def test_prose_around_the_literal_is_not_silently_collapsed():
             return AIMessage(prose)
 
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
-    assert answer_all(store, ["Q1"], ProseLLM())[0]["answer"] == prose
+    assert answer_all(store, ["Q1"], ProseLLM())[0][0]["answer"] == prose

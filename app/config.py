@@ -32,6 +32,12 @@ class Settings(BaseSettings):
 
     fallback: str = "Data Not Available"
 
+    # List prices per 1M tokens. They go stale, so they are configuration, and
+    # every figure derived from them is reported as an estimate.
+    price_per_1m_input: float = 0.15
+    price_per_1m_output: float = 0.60
+    price_per_1m_embedding: float = 0.02
+
 
 settings = Settings()
 

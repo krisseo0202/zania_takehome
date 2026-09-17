@@ -25,6 +25,10 @@ def test_health(client):
         "status": "ok",
         "fallback": settings.fallback,
         "max_file_mb": settings.max_file_mb,
+        "chat_model": settings.chat_model,
+        "embedding_model": settings.embedding_model,
+        "top_k": settings.top_k,
+        "temperature": settings.temperature,
     }
 
 
@@ -38,9 +42,12 @@ def test_health_publishes_the_configured_fallback(client, monkeypatch):
 def test_answer_returns_one_result_per_question_in_order(client):
     res = post(client)
     assert res.status_code == 200
-    assert res.json() == {"document": "toy.json", "results": [
-        {"question": "Q1", "answer": "A1"}, {"question": "Q2", "answer": "A2"},
-    ]}
+    body = res.json()
+    assert body["document"] == "toy.json"
+    assert [(r["question"], r["answer"]) for r in body["results"]] == [("Q1", "A1"), ("Q2", "A2")]
+    # Every answer carries the evidence it was drawn from.
+    assert all(r["sources"] for r in body["results"])
+    assert body["usage"]["embedding_tokens"] > 0
 
 
 @requires_nave_pdf

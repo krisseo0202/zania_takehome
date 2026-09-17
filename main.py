@@ -51,6 +51,10 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
             "status": "ok",
             "fallback": settings.fallback,
             "max_file_mb": settings.max_file_mb,
+            "chat_model": settings.chat_model,
+            "embedding_model": settings.embedding_model,
+            "top_k": settings.top_k,
+            "temperature": settings.temperature,
         }
 
     @app.post("/answer")
