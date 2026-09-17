@@ -65,24 +65,33 @@ Without the server, the same pipeline from the command line:
 .venv/bin/python scripts/run_sample.py Nave-SOC2-Type-2-Report.pdf samples/questions.json
 ```
 
-Output shape:
-
 Real output from `samples/sample_doc.json`, abridged:
 
 ```json
 {"document": "sample_doc.json",
  "results": [
    {"question": "Which cloud provider hosts the service?",
-    "answer": "Amazon Web Services (AWS)",
+    "answer": "Amazon Web Services (AWS) hosts the service.",
     "confidence": "high",
     "sources": ["json:hosting", "json:security", "json:incident_response"]},
    {"question": "What is the incident notification SLA in hours?",
     "answer": "Data Not Available",
     "confidence": "low",
-    "sources": ["json:incident_response", "json:monitoring"]}],
- "usage": {"input_tokens": 1360, "output_tokens": 55, "embedding_tokens": 92,
-           "estimated_cost_usd": 0.000239}}
+    "sources": ["json:incident_response", "json:monitoring"]},
+   {"question": "Which are performed: APM, EUM, and DEM?",
+    "answer": "APM is performed as it is stated that \"Application Performance Monitoring is enabled.\" EUM is not performed as it is explicitly stated that EUM is false. There is no information provided regarding DEM.",
+    "confidence": "medium",
+    "sources": ["json:monitoring", "json:hosting"]}],
+ "usage": {"input_tokens": 2800, "output_tokens": 106, "embedding_tokens": 92,
+           "estimated_cost_usd": 0.000485}}
 ```
+
+The last answer is the one to look at: the document says EUM is `false` and
+says nothing at all about DEM, and the answer keeps those apart. Note it
+phrases the missing part as prose rather than the literal `Data Not Available`.
+Only a whole-answer abstention is guaranteed to be the exact string, which is
+why callers should filter on `answer == "Data Not Available"` and treat
+per-part markers as text.
 
 `confidence` is the model's own `high` / `medium` / `low` rating of how directly
 the excerpts state the answer; an abstention is always `low`. It is a
@@ -92,9 +101,6 @@ self-report, useful for sorting review effort, not a calibrated probability.
 a verified citation of what the answer used, and it is present even when the
 answer abstains. `usage.estimated_cost_usd` applies the list prices in
 `config.py` to real token counts: an estimate, not a bill.
-
-The third answer is the one to look at: the document says EUM is `false` and
-says nothing at all about DEM, and those are different answers.
 
 ## Inputs
 
@@ -158,19 +164,28 @@ above and a labelled set.
 ## Observed behaviour on the sample report
 
 On the 84-page Nave SOC 2 report with the 19 sample questions: 333 chunks
-indexed in 21 s, 19 answers in 15 s, about a cent. **18 of 19 abstained.**
+indexed, 19 answers in 17 s, 31.5k input + 578 output + 78k embedding tokens,
+about $0.007. **7 answered, 12 abstained.**
 
-That is mostly correct, not a failure to find evidence. Retrieval was checked
-by hand and returned the right pages (business continuity → p82, incident
-response → p77-79, access control → p59-63), but a SOC 2 report describes
-audited controls, not questionnaire answers: it says a Business Continuity Plan
-exists and is tested, never that it is "available to authorized stakeholders".
-The prompt's "do not treat 'not stated' as 'no'" rule abstains on the gap.
+All seven answers are "Partially", at medium confidence, and that is the honest
+shape of the task: a SOC 2 report describes audited controls, not questionnaire
+answers, so it usually supports a broader claim than the question asks about.
+Asked whether *asset management and malware protection* policies are reviewed
+annually, the report says company policies are reviewed annually - related, not
+the same claim. The prompt names the gap instead of rounding it up to "Yes".
 
-The one grounded answer (unauthorized software) traces to control CC6.8 on
-pages 68-69. Note that `sample_json.csv` answers a *different* document — it
-cites GCP and `Company_kb (1).json` — so it is not ground truth for this PDF,
-and no labelled set for this document exists yet.
+The abstentions were checked by hand against the document, not assumed:
+
+- Retrieval returns the right pages (business continuity → p82, incident
+  response → p77-79, access control → p59-63), so these are not search misses.
+- "Where are your data centres located?" abstains correctly. The report names
+  the provider - "Nave's application runs in the Google Cloud Platform (GCP)",
+  p16 - but never states a location or region, and the question asks where.
+
+`sample_json.csv` is **not** ground truth for this PDF: it answers a different
+document (it cites `Company_kb (1).json`), so its answers are not achievable
+from this report. No labelled set for this document exists yet, which is why
+every quality claim above is a hand check rather than a measurement.
 
 ## Limitations
 

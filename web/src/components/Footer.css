@@ -1,0 +1,33 @@
+.app-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 62px;
+  padding: 0 var(--page-gutter);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.app-footer__note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.app-footer__spacer {
+  flex-grow: 1;
+}
+
+.app-footer__button {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-button-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.app-footer__button:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}

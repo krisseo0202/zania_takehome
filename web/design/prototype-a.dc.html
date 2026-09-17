@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; color: #121212; font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #1b4bd8; } a:hover { color: #123398; }
+    button { font: inherit; cursor: pointer; }
+  </style>
+</helmet>
+<div style="width: 1280px; height: 880px; box-sizing: border-box; background: #ffffff; display: flex; flex-direction: column;">
+
+  <header style="display: flex; align-items: center; gap: 14px; padding: 0 32px; height: 60px; border-bottom: 1px solid #e4e3df; flex-shrink: 0;">
+    <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Document Q&amp;A</span>
+    <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #5e5b56; border: 1px solid #e4e3df; border-radius: 3px; padding: 3px 7px;">POST /answer</span>
+    <span style="flex-grow: 1;"></span>
+    <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #5e5b56;">gpt-4o-mini · text-embedding-3-small · k=5 · temp 0</span>
+  </header>
+
+  <section style="display: flex; align-items: stretch; gap: 0; border-bottom: 1px solid #e4e3df; flex-shrink: 0;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; padding: 18px 32px; border-right: 1px solid #e4e3df;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56;">questions_file</span>
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; color: #121212;">questions.json</span>
+        <span style="font-size: 12px; color: #5e5b56;">10 questions · 2.1 KB</span>
+        <label for="questions_file" style="margin-left: auto; font-size: 12px; color: #1b4bd8; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 0;">Replace</label>
+        <input id="questions_file" type="file" accept="application/json" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;">
+      </div>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; padding: 18px 32px; border-right: 1px solid #e4e3df;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56;">document_file</span>
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; color: #121212;">Northwind-SOC2-Type-2.pdf</span>
+        <span style="font-size: 12px; color: #5e5b56;">96 pages · 6.5 MB</span>
+        <label for="document_file" style="margin-left: auto; font-size: 12px; color: #1b4bd8; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 0;">Replace</label>
+        <input id="document_file" type="file" accept=".pdf,.json" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;">
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; padding: 18px 32px;">
+      <button type="button" style="height: 44px; padding: 0 22px; background: #121212; color: #ffffff; border: 1px solid #121212; border-radius: 4px; font-size: 14px; font-weight: 500;">Run again</button>
+    </div>
+  </section>
+
+  <section style="display: flex; align-items: center; gap: 0; height: 58px; padding: 0 32px; border-bottom: 1px solid #e4e3df; flex-shrink: 0;">
+    <div style="display: flex; align-items: baseline; gap: 8px; padding-right: 24px;">
+      <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">{{total}}</span>
+      <span style="font-size: 13px; color: #5e5b56;">questions</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 24px; border-left: 1px solid #e4e3df;">
+      <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">{{answered}}</span>
+      <span style="font-size: 13px; color: #5e5b56;">answered</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 24px; border-left: 1px solid #e4e3df;">
+      <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: #8a5a00;">{{missing}}</span>
+      <span style="font-size: 13px; color: #5e5b56;">Data Not Available</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 24px; border-left: 1px solid #e4e3df;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px;">6.4 s</span>
+      <span style="font-size: 13px; color: #5e5b56;">wall clock</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 24px; border-left: 1px solid #e4e3df;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px;">$0.004</span>
+      <span style="font-size: 13px; color: #5e5b56;">est. spend</span>
+    </div>
+  </section>
+
+  <section style="display: flex; align-items: center; gap: 8px; padding: 0 32px; height: 54px; flex-shrink: 0;">
+    <sc-for list="{{chips}}" as="chip" hint-placeholder-count="3">
+      <button type="button" onClick="{{chip.pick}}" style="{{chip.style}}">
+        {{chip.label}}
+        <span style="{{chip.countStyle}}">{{chip.count}}</span>
+      </button>
+    </sc-for>
+    <span style="flex-grow: 1;"></span>
+    <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #5e5b56;">order preserved from questions.json</span>
+  </section>
+
+  <div style="display: flex; gap: 0; padding: 0 32px; flex-shrink: 0;">
+    <span style="width: 34px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56; padding-bottom: 8px;">#</span>
+    <span style="width: 400px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56; padding-bottom: 8px;">Question</span>
+    <span style="flex-grow: 1; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56; padding-bottom: 8px; padding-left: 24px;">Answer</span>
+    <span style="width: 74px; text-align: right; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #5e5b56; padding-bottom: 8px;">Source</span>
+  </div>
+
+  <div style="flex-grow: 1; overflow-y: auto; border-top: 1px solid #121212; margin: 0 32px;">
+    <sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+      <div style="display: flex; gap: 0; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid #ededea;">
+        <span style="width: 34px; flex-shrink: 0; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12px; color: #8d8a84;">{{row.n}}</span>
+        <span style="width: 400px; flex-shrink: 0; font-size: 14px; line-height: 1.45; color: #121212; padding-right: 24px; text-wrap: pretty;">{{row.q}}</span>
+        <span style="flex-grow: 1; font-size: 14px; line-height: 1.45; padding-left: 24px; text-wrap: pretty; {{row.answerStyle}}">{{row.a}}</span>
+        <span style="width: 74px; flex-shrink: 0; text-align: right; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12px; color: #5e5b56;">{{row.src}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <footer style="display: flex; align-items: center; gap: 12px; height: 62px; padding: 0 32px; border-top: 1px solid #e4e3df; flex-shrink: 0;">
+    <span style="font-size: 12px; color: #5e5b56;">Every answer is drawn only from the uploaded document. Nothing is carried over between runs.</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" style="height: 36px; padding: 0 16px; background: #ffffff; color: #121212; border: 1px solid #c9c7c1; border-radius: 4px; font-size: 13px;">Download JSON</button>
+    <button type="button" style="height: 36px; padding: 0 16px; background: #ffffff; color: #121212; border: 1px solid #c9c7c1; border-radius: 4px; font-size: 13px;">Download CSV</button>
+  </footer>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1280,"height":880}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'all' };
+  }
+
+  renderVals() {
+    var ND = 'Data Not Available';
+    var all = [
+      { q: 'Where are your data centres located?',
+        a: 'Primary region us-east-1 (N. Virginia), backup region us-west-2 (Oregon). Both are AWS facilities.',
+        src: 'p. 14', missing: false },
+      { q: 'Do you monitor and restrict the installation of unauthorized software?',
+        a: 'Yes. Endpoint management blocks unapproved executables and reports new installs to the security team daily.',
+        src: 'p. 31', missing: false },
+      { q: 'Is business continuity and operational resilience documentation available to authorized stakeholders?',
+        a: 'Yes. The BC/DR plan is published to the internal policy portal and reviewed annually.',
+        src: 'p. 52', missing: false },
+      { q: 'Are private keys provisioned for a unique purpose managed, and is cryptography secret?',
+        a: 'Keys are issued per service and held in a managed key service with access logged. Rotation interval: Data Not Available',
+        src: 'p. 44', missing: false },
+      { q: 'Are asset management and malware protection policies and procedures reviewed and updated at least annually?',
+        a: 'Yes. Both policies carry an annual review date; the most recent approval recorded is 2026-02-11.',
+        src: 'p. 19', missing: false },
+      { q: 'Does your organisation have an Identity and Access Management System in place used for the formal request, approval, and provisioning of access to a role?',
+        a: 'Yes. Requests are raised in the IAM system, approved by the resource owner, and access reviews run quarterly.',
+        src: 'p. 27', missing: false },
+      { q: 'Do transport containers protect against physical damage?', a: ND, src: '—', missing: true },
+      { q: 'Is there a dedicated sanctions compliance officer?', a: ND, src: '—', missing: true },
+      { q: 'Does the Hypervisor system lock accounts after 3-5 invalid login attempts?', a: ND, src: '—', missing: true },
+      { q: 'Does the Wireless Security Policy prohibit wired and wireless network connections at the same time?', a: ND, src: '—', missing: true }
+    ];
+
+    var answered = all.filter(function (r) { return !r.missing; }).length;
+    var missing = all.length - answered;
+    var f = this.state.filter;
+    var self = this;
+
+    var base = 'display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 4px; font-size: 13px; ';
+    var on = base + 'background: #121212; color: #ffffff; border: 1px solid #121212;';
+    var off = base + 'background: #ffffff; color: #121212; border: 1px solid #d6d4ce;';
+    var countOn = 'font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 11px; color: #ffffff; opacity: 0.72;';
+    var countOff = 'font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 11px; color: #5e5b56;';
+
+    var defs = [
+      { id: 'all', label: 'All', count: all.length },
+      { id: 'answered', label: 'Answered', count: answered },
+      { id: 'missing', label: 'Data Not Available', count: missing }
+    ];
+
+    var chips = defs.map(function (d) {
+      return {
+        label: d.label,
+        count: d.count,
+        style: d.id === f ? on : off,
+        countStyle: d.id === f ? countOn : countOff,
+        pick: function () { self.setState({ filter: d.id }); }
+      };
+    });
+
+    var shown = all.filter(function (r) {
+      if (f === 'all') { return true; }
+      if (f === 'missing') { return r.missing; }
+      return !r.missing;
+    });
+
+    var rows = shown.map(function (r, i) {
+      return {
+        n: (i + 1 < 10 ? '0' : '') + (i + 1),
+        q: r.q,
+        a: r.a,
+        src: r.src,
+        answerStyle: r.missing
+          ? 'color: #8a5a00; font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px;'
+          : 'color: #2c2a26;'
+      };
+    });
+
+    return { rows: rows, chips: chips, total: all.length, answered: answered, missing: missing };
+  }
+}
+</script>
+</body>
+</html>

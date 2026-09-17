@@ -1,0 +1,12 @@
+.results-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.results-section__error-heading {
+  margin: 24px var(--page-gutter) 0;
+  font-size: 15px;
+  font-weight: 600;
+}

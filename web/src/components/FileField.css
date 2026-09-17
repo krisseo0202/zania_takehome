@@ -1,0 +1,84 @@
+.file-field {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px var(--page-gutter);
+  border-right: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.file-field__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.file-field__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.file-field__name {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-field__placeholder {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.file-field__meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.file-field__replace {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 4px 0;
+  flex-shrink: 0;
+}
+
+.file-field__replace--disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* Standard visually-hidden file input, opened by clicking its <label>. */
+.file-field__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The input is clip-hidden, so its own focus ring is invisible: draw the ring
+   on the visible label instead. Without this a keyboard user can tab to the
+   file picker with no indication of where focus is. */
+/* The label precedes the input in the DOM, so :has() on the row, not a
+   sibling combinator. */
+.file-field__row:has(> .file-field__input:focus-visible) > .file-field__replace {
+  outline: 2px solid var(--color-accent, #4c8dff);
+  outline-offset: 2px;
+  border-radius: 3px;
+}

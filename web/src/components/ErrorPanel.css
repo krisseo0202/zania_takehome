@@ -1,0 +1,24 @@
+.error-panel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 40px var(--page-gutter);
+  padding: 16px 18px;
+  border: 1px solid var(--color-amber);
+  border-radius: 4px;
+  background: #fdf6ea;
+}
+
+.error-panel__status {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-amber);
+  flex-shrink: 0;
+}
+
+.error-panel__detail {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.45;
+}

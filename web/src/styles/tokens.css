@@ -1,0 +1,23 @@
+/* Design tokens lifted from web/design/prototype-a.dc.html. Kept as one file
+   so every component reads colors, fonts, and spacing from the same place. */
+:root {
+  --color-bg: #ffffff;
+  --color-text: #121212;
+  --color-text-muted: #5e5b56;
+  --color-text-faint: #8d8a84;
+  --color-answer: #2c2a26;
+  --color-accent: #1b4bd8;
+  --color-accent-hover: #123398;
+  --color-amber: #8a5a00;
+
+  --color-border: #e4e3df;
+  --color-border-row: #ededea;
+  --color-border-strong: #121212;
+  --color-chip-border: #d6d4ce;
+  --color-button-border: #c9c7c1;
+
+  --font-sans: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  --page-gutter: 32px;
+}
