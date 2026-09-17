@@ -27,7 +27,7 @@ def main(doc_path: str, questions_path: str, retrieval_only: bool = False) -> No
     if retrieval_only:
         questions = parse_questions(Path(questions_path).read_bytes())
         chunks = chunk_documents(load_document(document.name, document.read_bytes()))
-        with open_index(chunks, embeddings) as store:
+        with open_index(chunks, service.embeddings) as store:
             for question in questions:
                 print(f"\n=== {question}")
                 for passage in retrieve(store, question):

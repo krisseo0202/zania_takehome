@@ -105,3 +105,23 @@ def test_answer_document_runs_the_whole_pipeline(embeddings):
     assert body == {"document": "toy.json", "results": [
         {"question": "Q1", "answer": "A1"}, {"question": "Q1", "answer": "A1"},
     ]}
+
+
+def test_from_settings_fails_fast_without_an_api_key(monkeypatch):
+    from pydantic import SecretStr
+    from config import settings
+
+    monkeypatch.setattr(settings, "openai_api_key", SecretStr(""))
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        DocumentQAService.from_settings()
+
+
+def test_from_settings_builds_bounded_clients(monkeypatch):
+    from pydantic import SecretStr
+    from config import settings
+
+    monkeypatch.setattr(settings, "openai_api_key", SecretStr("sk-test"))
+    service = DocumentQAService.from_settings()  # constructs clients, no network
+    assert service.llm.model_name == settings.chat_model
+    assert service.llm.max_retries == settings.max_retries == service.embeddings.max_retries
+    assert service.llm.request_timeout == settings.request_timeout == service.embeddings.request_timeout
