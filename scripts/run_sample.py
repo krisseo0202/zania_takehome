@@ -13,7 +13,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from rag import DocumentQAService, chunk_documents, load_document, open_index, parse_questions, retrieve
+from app.loaders import chunk_documents, load_document, parse_questions
+from app.retrieval import open_index, retrieve
+from app.service import DocumentQAService
 
 PREVIEW_CHARS = 200
 

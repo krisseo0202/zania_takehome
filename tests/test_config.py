@@ -3,7 +3,7 @@
 import pytest
 from pydantic import SecretStr
 
-from config import get_chat_model, get_embeddings, settings
+from app.config import get_chat_model, get_embeddings, settings
 
 
 @pytest.fixture(autouse=True)

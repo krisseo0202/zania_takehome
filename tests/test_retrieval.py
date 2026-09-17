@@ -1,37 +1,12 @@
 """Index lifecycle. Fake embeddings test integration, not retrieval quality."""
 
-import json
-
 import pytest
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
-from rag import DocumentQAService, answer_all, build_index, chunk_documents, load_document, open_index, retrieve
-from tests.test_rag import TOY, StubLLM
-
-
-class CountingEmbeddings(DeterministicFakeEmbedding):
-    """Deterministic fake vectors that record how often each side was called."""
-
-    doc_calls: list[int] = []
-    query_calls: int = 0
-
-    def embed_documents(self, texts):
-        self.doc_calls.append(len(texts))
-        return super().embed_documents(texts)
-
-    def embed_query(self, text):
-        self.query_calls += 1
-        return super().embed_query(text)
-
-
-@pytest.fixture
-def embeddings():
-    return CountingEmbeddings(size=64, doc_calls=[], query_calls=0)
-
-
-@pytest.fixture
-def toy_chunks():
-    return chunk_documents(load_document("toy.json", json.dumps(TOY).encode()))
+from app.answering import answer_all
+from app.loaders import chunk_documents, load_document
+from app.retrieval import build_index, open_index, retrieve
+from tests.conftest import StubLLM
 
 
 def test_retrieve_returns_k_chunks_with_provenance_intact(embeddings, toy_chunks):
@@ -98,39 +73,3 @@ def test_partial_indexing_failure_drops_its_own_collection(toy_chunks):
         build_index(toy_chunks, BrokenEmbeddings(size=64))
 
 
-def test_service_runs_the_whole_pipeline(embeddings):
-    service = DocumentQAService(embeddings, StubLLM())
-    body = service.answer_document("toy.json", json.dumps(TOY).encode(), b'["Q1", "Q1"]')
-    assert body == {"document": "toy.json", "results": [
-        {"question": "Q1", "answer": "A1"}, {"question": "Q1", "answer": "A1"},
-    ]}
-
-
-@pytest.fixture
-def api_key(monkeypatch):
-    from pydantic import SecretStr
-    from config import get_chat_model, get_embeddings, settings
-
-    def use(value):
-        monkeypatch.setattr(settings, "openai_api_key", SecretStr(value))
-        get_embeddings.cache_clear()
-        get_chat_model.cache_clear()
-    yield use
-    get_embeddings.cache_clear()
-    get_chat_model.cache_clear()
-
-
-def test_from_settings_fails_fast_without_an_api_key(api_key):
-    api_key("")
-    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
-        DocumentQAService.from_settings()
-
-
-def test_from_settings_builds_bounded_clients(api_key):
-    from config import settings
-
-    api_key("sk-test")
-    service = DocumentQAService.from_settings()  # constructs clients, no network
-    assert service.llm.model_name == settings.chat_model
-    assert service.llm.max_retries == settings.max_retries == service.embeddings.max_retries
-    assert service.llm.request_timeout == settings.request_timeout == service.embeddings.request_timeout

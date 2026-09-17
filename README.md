@@ -8,7 +8,18 @@ document. A question the document does not cover is answered
 
 The pipeline is complete and tested: load → chunk → index → retrieve → answer.
 The HTTP API is not built yet, so the entry point today is a CLI script.
-`answer_document()` in `rag.py` is the single call a route will wrap.
+`DocumentQAService.answer_document()` is the single call a route will wrap.
+
+```text
+app/
+  config.py      settings from .env, OpenAI clients with timeouts and retries
+  loaders.py     uploads -> Documents: parse questions, read PDF/JSON, chunk
+  retrieval.py   per-upload Chroma collection, similarity search, cleanup
+  answering.py   prompt, one grounded answer, all answers in input order
+  service.py     one upload end to end
+tests/           one file per module, plus shared fakes in conftest.py
+scripts/         run_sample.py, the CLI demo
+```
 
 ## Setup
 

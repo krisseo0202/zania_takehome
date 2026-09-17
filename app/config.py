@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     top_k: int = 5
 
     max_questions: int = 50
+    max_file_mb: int = 20  # per upload; both files are held in memory
     max_question_chars: int = 2000
 
     temperature: float = 0.0  # reproducible enough to audit run to run
