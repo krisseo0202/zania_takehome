@@ -9,6 +9,5 @@ __pycache__
 *.pdf
 *.csv
 examples
-web/node_modules
-web/src
-web/design
+web/*
+!web/dist

@@ -119,41 +119,46 @@ def answer_one(store, question: str, llm, label: str = "question") -> Answer:
     Questionnaire items can name customers and systems, so logs carry the
     position and DEBUG carries the text, for operators who opted in.
     """
-    start = time.perf_counter()
-    logger.debug("%s: %r", label, question)
-    passages = retrieve(store, question)
-    retrieved_ms = elapsed_ms(start)
-    if not passages:
-        logger.warning("%s: no passages retrieved, abstaining without a model call", label)
-        return Answer(FALLBACK)
+    try:
+        start = time.perf_counter()
+        logger.debug("%s: %r", label, question)
+        passages = retrieve(store, question)
+        retrieved_ms = elapsed_ms(start)
+        if not passages:
+            logger.warning("%s: no passages retrieved, abstaining without a model call", label)
+            return Answer(FALLBACK)
 
-    response = llm.invoke([
-        SystemMessage(SYSTEM_PROMPT),
-        HumanMessage(f"Excerpts:\n{format_context(passages)}\n\nQuestion: {question}"),
-    ])
-    answer, confidence = _split_confidence(response.text.strip())
-    answer = _normalize_abstention(answer)
-    if not answer:
-        # A provider hiccup must surface as an error, never as missing evidence.
-        raise EmptyAnswer(f"model returned an empty answer for: {question}")
-    if answer == FALLBACK:
-        confidence = "low"
+        response = llm.invoke([
+            SystemMessage(SYSTEM_PROMPT),
+            HumanMessage(f"Excerpts:\n{format_context(passages)}\n\nQuestion: {question}"),
+        ])
+        answer, confidence = _split_confidence(response.text.strip())
+        answer = _normalize_abstention(answer)
+        if not answer:
+            # A provider hiccup must surface as an error, never as missing evidence.
+            raise EmptyAnswer(f"model returned an empty answer for: {question}")
+        if answer == FALLBACK:
+            confidence = "low"
 
-    sources = _source_ids(passages)
-    # usage_metadata is absent on fake models and on providers that omit it.
-    usage = getattr(response, "usage_metadata", None) or {}
-    logger.info(
-        "%s: answered in %d ms (retrieval %d ms, %d passages %s)",
-        label, elapsed_ms(start), retrieved_ms, len(passages), sources,
-    )
-    return Answer(
-        text=answer,
-        confidence=confidence,
-        sources=sources,
-        input_tokens=usage.get("input_tokens", 0),
-        output_tokens=usage.get("output_tokens", 0),
-    )
+        sources = _source_ids(passages)
+        # usage_metadata is absent on fake models and on providers that omit it.
+        usage = getattr(response, "usage_metadata", None) or {}
+        logger.info(
+            "%s: answered in %d ms (retrieval %d ms, %d passages %s)",
+            label, elapsed_ms(start), retrieved_ms, len(passages), sources,
+        )
+        return Answer(
+            text=answer,
+            confidence=confidence,
+            sources=sources,
+            input_tokens=usage.get("input_tokens", 0),
+            output_tokens=usage.get("output_tokens", 0),
+        )
 
+    except Exception:
+        # Name the position, not the text, before the error unwinds.
+        logger.exception("%s: failed", label)
+        raise
 
 def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[dict], dict]:
     """One model call per *distinct* question; output mirrors the input list.
@@ -170,18 +175,11 @@ def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[d
     for position, key in enumerate(keys, start=1):
         labels.setdefault(key, f"q{position}/{total}")
 
-    def one(key: str) -> tuple[str, Answer]:
-        try:
-            return key, answer_one(store, key, llm, label=labels[key])
-        except Exception:
-            # Name the position, not the text, before the error unwinds.
-            logger.exception("%s: failed", labels[key])
-            raise
-
     cache: dict[str, Answer] = {}
     done = 0
     with ThreadPoolExecutor(max_workers=settings.max_concurrency) as pool:
-        for key, answered in pool.map(one, labels):  # yields in submission order
+        answers = pool.map(lambda key: answer_one(store, key, llm, labels[key]), labels)
+        for key, answered in zip(labels, answers):  # map yields in submission order
             cache[key] = answered
             done += keys.count(key)
             if on_answer:
