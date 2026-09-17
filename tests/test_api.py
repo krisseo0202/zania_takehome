@@ -154,3 +154,13 @@ def test_stream_rejects_a_wrong_extension_before_doing_any_work(client):
     })
     # A 400 status, not a 200 stream carrying an error event.
     assert res.status_code == 400
+
+
+def test_stream_answer_events_identify_the_rows_they_complete(client):
+    events = _stream_events(client, questions=b'["Q1", "Q2", "Q1"]')
+    answers = [e for e in events if e["stage"] == "answer"]
+    # Every row is accounted for exactly once, the duplicate included.
+    assert sorted(p for e in answers for p in e["positions"]) == [1, 2, 3]
+    assert all(e["outcome"] in ("done", "abstain") for e in answers)
+    assert all(e["confidence"] in ("high", "medium", "low") for e in answers)
+    assert all(isinstance(e["ms"], int) for e in answers)

@@ -162,6 +162,9 @@ def test_distinct_questions_are_answered_concurrently():
 def test_progress_counts_every_position_including_duplicates():
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
     seen = []
-    answer_all(store, ["Q1", "Q2", "Q1"], StubLLM(), on_answer=lambda done, total: seen.append((done, total)))
-    assert seen[-1] == (3, 3)
-    assert [d for d, _ in seen] == sorted(d for d, _ in seen)  # monotone
+    answer_all(store, ["Q1", "Q2", "Q1"], StubLLM(),
+               on_answer=lambda done, total, answer, spots: seen.append((done, total, spots)))
+    assert seen[-1][:2] == (3, 3)
+    assert [d for d, _, _ in seen] == sorted(d for d, _, _ in seen)  # monotone
+    # The duplicate is answered once but marks both rows it occupies.
+    assert sorted(spot for _, _, spots in seen for spot in spots) == [1, 2, 3]

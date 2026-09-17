@@ -8,7 +8,7 @@ import type { FilterId } from './components/FilterChips';
 import { ResultsSection } from './components/ResultsSection';
 import { RunForm } from './components/RunForm';
 import { applyStage, type StageProgress } from './components/StageBar';
-import { countQuestionsLoosely } from './questionsPreview';
+import { parseQuestionsLoosely } from './questionsPreview';
 import { toCsv } from './csv';
 import { downloadBlob } from './download';
 import { formatBytes } from './format';
@@ -28,6 +28,7 @@ export default function App() {
   const [questionsFile, setQuestionsFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [questionsMeta, setQuestionsMeta] = useState<string | null>(null);
+  const [questionList, setQuestionList] = useState<string[]>([]);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [result, setResult] = useState<AnswerResponse | null>(null);
@@ -54,6 +55,7 @@ export default function App() {
   useEffect(() => {
     if (!questionsFile) {
       setQuestionsMeta(null);
+      setQuestionList([]);
       return;
     }
     let cancelled = false;
@@ -61,7 +63,9 @@ export default function App() {
       .text()
       .then((text) => {
         if (cancelled) return;
-        const count = countQuestionsLoosely(text);
+        const parsed = parseQuestionsLoosely(text);
+        setQuestionList(parsed ?? []);
+        const count = parsed?.length ?? null;
         const size = formatBytes(questionsFile.size);
         setQuestionsMeta(count === null ? size : `${count} question${count === 1 ? '' : 's'} · ${size}`);
       })
@@ -147,6 +151,7 @@ export default function App() {
         result={result}
         elapsedMs={elapsedMs}
         progress={progress}
+        questions={questionList}
         fallback={config.fallback}
         filter={filter}
         onFilterChange={setFilter}

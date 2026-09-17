@@ -150,12 +150,15 @@ one JSON object per line:
 {"stage": "load", "sections": 84}
 {"stage": "chunk", "chunks": 751, "chunk_size": 500, "chunk_overlap": 150}
 {"stage": "index", "vectors": 333, "top_k": 5}
-{"stage": "answer", "done": 1, "total": 19}
+{"stage": "answer", "done": 1, "total": 19, "positions": [1],
+ "outcome": "abstain", "confidence": "low", "sources": ["page:81"], "ms": 2140}
 {"stage": "done", "result": { ... same body as /answer ... }}
 ```
 
 Every stage is emitted **after** it finishes, so the progress bar reports work
-that happened rather than work that is hoped for. A failure arrives as
+that happened rather than work that is hoped for. Answering runs concurrently,
+so `positions` names the rows an event completes rather than assuming order; a
+duplicate question is answered once and marks every row it occupies. A failure arrives as
 `{"stage": "error", "status": 400, ...}` instead of a partial result. NDJSON
 rather than server-sent events, because `EventSource` is GET-only and cannot
 carry the upload.

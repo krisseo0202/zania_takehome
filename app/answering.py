@@ -89,6 +89,7 @@ class Answer:
 
     text: str
     confidence: str = "low"  # high | medium | low; abstentions are always low
+    ms: int = 0
     sources: list[str] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
@@ -171,9 +172,12 @@ def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[d
     start = time.perf_counter()
     total = len(questions)
     keys = [q.strip() for q in questions]
-    labels: dict[str, str] = {}  # distinct question -> its first position, for logs
+    # distinct question -> every position it occupies, so a duplicate answered
+    # once still marks every row it appears in.
+    positions: dict[str, list[int]] = {}
     for position, key in enumerate(keys, start=1):
-        labels.setdefault(key, f"q{position}/{total}")
+        positions.setdefault(key, []).append(position)
+    labels = {key: f"q{spots[0]}/{total}" for key, spots in positions.items()}
 
     cache: dict[str, Answer] = {}
     done = 0
@@ -181,9 +185,9 @@ def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[d
         answers = pool.map(lambda key: answer_one(store, key, llm, labels[key]), labels)
         for key, answered in zip(labels, answers):  # map yields in submission order
             cache[key] = answered
-            done += keys.count(key)
+            done += len(positions[key])
             if on_answer:
-                on_answer(done, total)
+                on_answer(done, total, answered, positions[key])
 
     results = [
         {

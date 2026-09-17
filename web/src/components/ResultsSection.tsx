@@ -3,6 +3,7 @@ import type { AnswerResponse } from '../types';
 import type { Phase } from '../App';
 import { ErrorPanel, type ErrorInfo } from './ErrorPanel';
 import { FilterChips, type FilterId } from './FilterChips';
+import { QuestionList } from './QuestionList';
 import { StageBar, type StageProgress } from './StageBar';
 import { ResultsTable } from './ResultsTable';
 import { SummaryStrip } from './SummaryStrip';
@@ -14,6 +15,7 @@ interface ResultsSectionProps {
   result: AnswerResponse | null;
   elapsedMs: number | null;
   progress: StageProgress;
+  questions: string[];
   /** The exact abstention literal, as published by /health. */
   fallback: string;
   filter: FilterId;
@@ -31,6 +33,7 @@ export function ResultsSection({
   result,
   elapsedMs,
   progress,
+  questions,
   fallback,
   filter,
   onFilterChange,
@@ -45,6 +48,9 @@ export function ResultsSection({
           Running
         </h2>
         <StageBar progress={progress} />
+        {questions.length > 0 && (
+          <QuestionList questions={questions} progress={progress.rows ?? {}} />
+        )}
       </section>
     );
   }
@@ -67,6 +73,7 @@ export function ResultsSection({
       answer: item.answer,
       isMissing: item.answer === fallback,
       sources: item.sources,
+      confidence: item.confidence,
     }));
     const answered = rows.filter((row) => !row.isMissing).length;
     const missing = rows.length - answered;

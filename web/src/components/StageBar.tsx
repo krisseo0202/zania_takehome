@@ -1,4 +1,4 @@
-import type { StageEvent } from '../types';
+import type { QuestionProgress, StageEvent } from '../types';
 import './StageBar.css';
 
 export interface StageProgress {
@@ -11,6 +11,8 @@ export interface StageProgress {
   topK?: number;
   answered?: number;
   total?: number;
+  /** Per-row outcome, keyed by 1-based position. */
+  rows?: Record<number, QuestionProgress>;
 }
 
 /** Fold a stage event into the progress state. */
@@ -29,8 +31,18 @@ export function applyStage(current: StageProgress, event: StageEvent): StageProg
       };
     case 'index':
       return { ...current, vectors: event.vectors, topK: event.top_k };
-    case 'answer':
-      return { ...current, answered: event.done, total: event.total ?? current.total };
+    case 'answer': {
+      const rows = { ...(current.rows ?? {}) };
+      for (const position of event.positions ?? []) {
+        rows[position] = {
+          status: event.outcome ?? 'done',
+          confidence: event.confidence,
+          sources: event.sources,
+          ms: event.ms,
+        };
+      }
+      return { ...current, answered: event.done, total: event.total ?? current.total, rows };
+    }
     default:
       return current;
   }

@@ -93,7 +93,15 @@ class DocumentQAService:
             emit("index", {"vectors": len(chunks), "top_k": settings.top_k})
             results, usage = answer_all(
                 store, questions, self.llm,
-                on_answer=lambda done, total: emit("answer", {"done": done, "total": total}),
+                on_answer=lambda done, total, answer, spots: emit("answer", {
+                    "done": done,
+                    "total": total,
+                    "positions": spots,
+                    "outcome": "abstain" if answer.text == settings.fallback else "done",
+                    "confidence": answer.confidence,
+                    "sources": answer.sources,
+                    "ms": answer.ms,
+                }),
             )
 
         return {

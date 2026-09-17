@@ -3,6 +3,8 @@
 export interface AnswerResultItem {
   question: string;
   answer: string;
+  /** The model's own high/medium/low rating. Self-reported, not calibrated. */
+  confidence?: string;
   /** Passages retrieved for this question, best match first. Evidence that was
    * put in front of the model, not a verified citation of what it used. */
   sources?: string[];
@@ -48,7 +50,22 @@ export interface StageEvent {
   top_k?: number;
   done?: number;
   total?: number;
+  /** 1-based rows this event completes; a duplicate question marks several. */
+  positions?: number[];
+  outcome?: 'done' | 'abstain';
+  confidence?: string;
+  sources?: string[];
+  ms?: number;
   result?: AnswerResponse;
+  /** HTTP status, on an error event only. */
   status?: number;
   detail?: string;
+}
+
+/** What the live list knows about one question while the run is in flight. */
+export interface QuestionProgress {
+  status: 'queued' | 'done' | 'abstain';
+  confidence?: string;
+  sources?: string[];
+  ms?: number;
 }

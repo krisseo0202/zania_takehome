@@ -80,3 +80,22 @@
   font-size: 12px;
   color: var(--color-text-muted);
 }
+
+.results-table__col-confidence {
+  width: 92px;
+}
+
+.results-table__confidence {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+.results-table__confidence--high {
+  color: var(--color-text);
+}
+
+.results-table__confidence--low {
+  color: var(--color-text-faint);
+}

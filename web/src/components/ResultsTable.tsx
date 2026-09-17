@@ -7,6 +7,7 @@ export interface ResultsRow {
   answer: string;
   isMissing: boolean;
   sources?: string[];
+  confidence?: string;
 }
 
 interface ResultsTableProps {
@@ -24,6 +25,7 @@ export function ResultsTable({ rows }: ResultsTableProps) {
           <col className="results-table__col-index" />
           <col className="results-table__col-question" />
           <col />
+          <col className="results-table__col-confidence" />
           <col className="results-table__col-source" />
         </colgroup>
         <thead>
@@ -31,6 +33,9 @@ export function ResultsTable({ rows }: ResultsTableProps) {
             <th scope="col">#</th>
             <th scope="col">Question</th>
             <th scope="col">Answer</th>
+            <th scope="col" className="results-table__source-head">
+              Confidence
+            </th>
             <th scope="col" className="results-table__source-head">
               Source
             </th>
@@ -48,6 +53,11 @@ export function ResultsTable({ rows }: ResultsTableProps) {
                   Blank when the answer abstains: those passages are what was
                   searched, not evidence for an answer, and a page number next
                   to "Data Not Available" reads as a citation for it. */}
+              {/* The model's own rating, not a calibrated probability. An
+                  abstention is always low, so it adds nothing there. */}
+              <td className={`results-table__confidence results-table__confidence--${row.confidence ?? 'low'}`}>
+                {row.isMissing ? '—' : (row.confidence ?? '')}
+              </td>
               <td
                 className="results-table__source"
                 title={row.isMissing ? undefined : row.sources?.join(', ')}
