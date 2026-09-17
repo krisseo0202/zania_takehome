@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     top_k: int = 5
 
     max_questions: int = 50
+    max_concurrency: int = 5  # distinct questions answered at once; bounds the OpenAI rate
+    log_level: str = "INFO"
     max_file_mb: int = 20  # per upload; both files are held in memory
     max_question_chars: int = 2000
 

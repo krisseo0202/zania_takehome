@@ -3,6 +3,7 @@
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from langchain_core.documents import Document
@@ -157,34 +158,44 @@ def answer_one(store, question: str, llm, label: str = "question") -> Answer:
 def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[dict], dict]:
     """One model call per *distinct* question; output mirrors the input list.
 
-    [Q1, Q2, Q1] costs two calls and returns [A1, A2, A1]. Returns the result
+    [Q1, Q2, Q1] costs two calls and returns [A1, A2, A1]. Distinct questions
+    run on up to `max_concurrency` threads (the LangChain and Chroma calls are
+    sync); results are assembled in input order afterwards. Returns the result
     rows and the token totals actually spent (duplicates cost nothing).
     """
     start = time.perf_counter()
+    total = len(questions)
+    keys = [q.strip() for q in questions]
+    labels: dict[str, str] = {}  # distinct question -> its first position, for logs
+    for position, key in enumerate(keys, start=1):
+        labels.setdefault(key, f"q{position}/{total}")
+
+    def one(key: str) -> tuple[str, Answer]:
+        try:
+            return key, answer_one(store, key, llm, label=labels[key])
+        except Exception:
+            # Name the position, not the text, before the error unwinds.
+            logger.exception("%s: failed", labels[key])
+            raise
+
     cache: dict[str, Answer] = {}
-    results = []
+    done = 0
+    with ThreadPoolExecutor(max_workers=settings.max_concurrency) as pool:
+        for key, answered in pool.map(one, labels):  # yields in submission order
+            cache[key] = answered
+            done += keys.count(key)
+            if on_answer:
+                on_answer(done, total)
 
-    for position, question in enumerate(questions, start=1):
-        key = question.strip()
-        label = f"q{position}/{len(questions)}"
-
-        if key not in cache:
-            try:
-                cache[key] = answer_one(store, key, llm, label=label)
-            except Exception:
-                # Name the position, not the text, before the error unwinds.
-                logger.exception("%s: failed", label)
-                raise
-
-        answered = cache[key]
-        if on_answer:
-            on_answer(position, len(questions))
-        results.append({
+    results = [
+        {
             "question": question,
-            "answer": answered.text,
-            "confidence": answered.confidence,
-            "sources": answered.sources,
-        })
+            "answer": cache[key].text,
+            "confidence": cache[key].confidence,
+            "sources": cache[key].sources,
+        }
+        for question, key in zip(questions, keys)
+    ]
 
     # Abstentions, not model calls: the model itself can return FALLBACK, so
     # subtracting these from the distinct count would undercount real calls.

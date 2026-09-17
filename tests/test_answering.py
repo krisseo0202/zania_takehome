@@ -140,3 +140,28 @@ def test_confidence_line_is_split_off_the_answer(raw, answer, confidence):
     store = StubStore([Document("x", metadata={"source_id": "json:a"})])
     row = answer_all(store, ["Q1"], FixedLLM())[0][0]
     assert (row["answer"], row["confidence"]) == (answer, confidence)
+
+
+def test_distinct_questions_are_answered_concurrently():
+    import threading
+
+    class BarrierLLM:
+        """Each call waits for a second concurrent call; serial execution times out."""
+
+        barrier = threading.Barrier(2, timeout=5)
+
+        def invoke(self, messages):
+            self.barrier.wait()
+            return AIMessage("ok")
+
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    results, _ = answer_all(store, ["Q1", "Q2"], BarrierLLM())
+    assert [r["answer"] for r in results] == ["ok", "ok"]
+
+
+def test_progress_counts_every_position_including_duplicates():
+    store = StubStore([Document("x", metadata={"source_id": "json:a"})])
+    seen = []
+    answer_all(store, ["Q1", "Q2", "Q1"], StubLLM(), on_answer=lambda done, total: seen.append((done, total)))
+    assert seen[-1] == (3, 3)
+    assert [d for d, _ in seen] == sorted(d for d, _ in seen)  # monotone

@@ -1,5 +1,7 @@
 # Document Q&A
 
+[![tests](https://github.com/krisseo0202/zania_takehome/actions/workflows/tests.yml/badge.svg)](https://github.com/krisseo0202/zania_takehome/actions/workflows/tests.yml)
+
 Answers a list of questions from one uploaded document, and only from that
 document. A question the document does not cover is answered
 `Data Not Available` rather than guessed.
@@ -40,6 +42,9 @@ curl -O https://getnave.com/assets2/docs/Nave-SOC2-Type-2-Report.pdf
 
 ```bash
 .venv/bin/uvicorn main:app --port 8000
+
+# or, with no venv at all:
+cp .env.example .env && docker compose up --build
 
 curl -X POST http://localhost:8000/answer \
   -F "questions_file=@samples/questions.json" \
@@ -120,7 +125,9 @@ survive flattening — an explicit "no" is evidence, not an absence.
 Each section is split into ~500-character overlapping chunks that keep their
 page or path, embedded once into a per-upload Chroma collection, and the five
 nearest chunks per question are passed to `gpt-4o-mini` as the only permitted
-evidence. The collection is deleted when the run ends, including on error.
+evidence. Distinct questions are answered on up to five threads
+(`max_concurrency`), duplicates cost nothing, and the response keeps input
+order. The collection is deleted when the run ends, including on error.
 
 ## Design decisions
 

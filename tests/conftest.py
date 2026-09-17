@@ -36,13 +36,21 @@ class StubStore:
 
 
 class StubLLM:
-    """Records every prompt it sees and answers `A<n>` in call order."""
+    """Records every prompt it sees. Answers `Qn` with `An`, anything else `A<call n>`.
+
+    Keyed on the question, not call order, because answer_all runs distinct
+    questions on threads.
+    """
 
     def __init__(self):
         self.calls = []
 
     def invoke(self, messages):
-        self.calls.append(messages[-1].content)
+        prompt = messages[-1].content
+        self.calls.append(prompt)
+        question = prompt.rsplit("Question: ", 1)[-1].strip()
+        if question.startswith("Q") and question[1:].isdigit():
+            return AIMessage(f"A{question[1:]}")
         return AIMessage(f"A{len(self.calls)}")
 
 

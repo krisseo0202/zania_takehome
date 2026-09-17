@@ -25,6 +25,9 @@ from app.config import settings
 from app.service import DocumentQAService
 from app.util import elapsed_ms
 
+logging.basicConfig(  # uvicorn configures only its own loggers; this is ours
+    level=settings.log_level, format="%(levelname)-7s %(name)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Checked before a body is read, so a wrong upload costs nothing. The questions

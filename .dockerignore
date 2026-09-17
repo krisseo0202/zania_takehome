@@ -1,0 +1,14 @@
+.git
+.venv
+.env*
+!.env.example
+.claude
+.pytest_cache
+__pycache__
+*.ipynb
+*.pdf
+*.csv
+examples
+web/node_modules
+web/src
+web/design
