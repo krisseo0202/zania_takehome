@@ -25,3 +25,7 @@ web/node_modules/
 web/dist/
 web/.vite/
 .gstack/
+
+# Local demo inputs and one-off experiment output, not part of the submission
+samples/*resume*
+examples/nave-chunk500-k5-floor046.json
