@@ -1,0 +1,222 @@
+{
+  "document": "Nave-SOC2-Type-2-Report.pdf",
+  "results": [
+    {
+      "question": "Where are your data centres located?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:26",
+        "page:81",
+        "page:16"
+      ]
+    },
+    {
+      "question": "Do you monitor and restrict the installation of unauthorized software?",
+      "answer": "Partially. The excerpts indicate that the entity implements controls to prevent or detect unauthorized or malicious software, including monitoring web traffic and suspicious activity. However, there is no specific mention of monitoring and restricting the installation of unauthorized software.",
+      "confidence": "medium",
+      "sources": [
+        "page:68",
+        "page:69",
+        "page:56"
+      ]
+    },
+    {
+      "question": "Is business continuity and operational resilience documentation available to authorized stakeholders?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:82",
+        "page:54",
+        "page:78"
+      ]
+    },
+    {
+      "question": "Are private keys provisioned for a unique purpose managed, and is cryptography secret?",
+      "answer": "Partially. The excerpts indicate that Nave has established policies and procedures for the use of cryptographic controls and key management, which suggests that private keys are managed. However, there is no explicit mention of private keys being provisioned for a unique purpose or that cryptography is secret.",
+      "confidence": "medium",
+      "sources": [
+        "page:58",
+        "page:23",
+        "page:36"
+      ]
+    },
+    {
+      "question": "Are data center environmental control systems designed to monitor, maintain, and test that on-site temperature and humidity conditions fall within accepted industry standards effectively implemented and maintained?",
+      "answer": "Partially. The excerpts indicate that GCP is responsible for the installation and regular maintenance of environmental monitoring systems at the data centers, which suggests that there are systems in place to monitor and maintain environmental conditions. However, there is no specific mention of testing these systems to ensure that temperature and humidity conditions fall within accepted industry standards.",
+      "confidence": "medium",
+      "sources": [
+        "page:26",
+        "page:27",
+        "page:49",
+        "page:50"
+      ]
+    },
+    {
+      "question": "Are cryptographically secure and standardized network protocols implemented for the management, import, and export of data?",
+      "answer": "Partially. The excerpts indicate that data in transit is encrypted using strong cryptographic algorithms, which suggests that secure protocols are in place for data transmission. However, there is no specific mention of standardized network protocols for the management, import, and export of data.",
+      "confidence": "medium",
+      "sources": [
+        "page:66",
+        "page:64",
+        "page:67",
+        "page:14"
+      ]
+    },
+    {
+      "question": "Are infrastructure and virtualization security policies and procedures established, documented, approved, communicated, applied, evaluated, and maintained?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:20",
+        "page:15",
+        "page:19",
+        "page:79",
+        "page:56"
+      ]
+    },
+    {
+      "question": "Are asset management and malware protection policies and procedures reviewed and updated at least annually?",
+      "answer": "Partially. The excerpts confirm that the company has an Asset Management Policy that establishes requirements for managing and tracking organizational assets, and that company policies are reviewed and approved at least annually. However, there is no specific mention of malware protection policies and procedures being reviewed and updated annually.",
+      "confidence": "medium",
+      "sources": [
+        "page:56",
+        "page:19",
+        "page:54",
+        "page:53",
+        "page:37"
+      ]
+    },
+    {
+      "question": "Do transport containers protect against physical damage?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:66",
+        "page:67",
+        "page:65",
+        "page:56"
+      ]
+    },
+    {
+      "question": "Do administrative and file sharing interfaces for web server software run on non-standard ports (e.g., Not 21, 80 and 443)?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:64",
+        "page:24",
+        "page:67",
+        "page:63"
+      ]
+    },
+    {
+      "question": "Does the Incident Response Plan include event reporting mechanism to support the reporting action, and to list all necessary actions in case of an information security Event?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:77",
+        "page:39",
+        "page:78",
+        "page:79",
+        "page:76"
+      ]
+    },
+    {
+      "question": "Is there a dedicated sanctions compliance officer?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:32",
+        "page:75",
+        "page:79",
+        "page:41",
+        "page:50"
+      ]
+    },
+    {
+      "question": "Is there a Quality Assurance or other organization that ensures software integrity and adherence to internal processes for software development for FDA-regulated systems?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:40",
+        "page:44",
+        "page:83",
+        "page:80",
+        "page:81"
+      ]
+    },
+    {
+      "question": "Does the Wireless Security Policy prohibit wired and wireless network connections at the same time?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:64",
+        "page:66",
+        "page:65",
+        "page:55"
+      ]
+    },
+    {
+      "question": "Does the Wireless Security Policy require continuous monitoring and alerting to security personnel, or quarterly scanning for rogue wireless access points?",
+      "answer": "Partially. The excerpts describe monitoring web traffic and suspicious activity, with alerts sent to appropriate personnel when anomalous traffic is identified, but they do not specifically mention continuous monitoring for rogue wireless access points. Additionally, there is a mention of conducting vulnerability scans of the production environment at least quarterly, but this does not directly address the requirement for monitoring rogue wireless access points.",
+      "confidence": "medium",
+      "sources": [
+        "page:19",
+        "page:53",
+        "page:70",
+        "page:43",
+        "page:50"
+      ]
+    },
+    {
+      "question": "Does the approved anti-malware policy or program mandate an interval between the availability of a new anti-malware signature update and its deployment no longer than 24 hours?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:69",
+        "page:68",
+        "page:21"
+      ]
+    },
+    {
+      "question": "Does the Hypervisor system lock accounts after 3-5 invalid login attempts?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:66",
+        "page:67",
+        "page:63",
+        "page:60"
+      ]
+    },
+    {
+      "question": "Do asset inventory and management processes include all physical objects with network connectivity (IoT Devices)?",
+      "answer": "Data Not Available",
+      "confidence": "low",
+      "sources": [
+        "page:59",
+        "page:37",
+        "page:36",
+        "page:56"
+      ]
+    },
+    {
+      "question": "Does your organisation have an Identity and Access Management System in place used for the formal request, approval, and provisioning of access to a role?",
+      "answer": "Partially. The excerpts indicate that the entity registers and authorizes new internal and external users prior to issuing system credentials and granting access, which suggests a formal process for access provisioning. However, there is no explicit mention of a comprehensive Identity and Access Management System that encompasses the entire request and approval process. Data Not Available for the specifics of the formal request and approval mechanism.",
+      "confidence": "medium",
+      "sources": [
+        "page:60",
+        "page:61",
+        "page:63",
+        "page:59",
+        "page:55"
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 21284,
+    "output_tokens": 532,
+    "embedding_tokens": 74924,
+    "estimated_cost_usd": 0.00501
+  }
+}

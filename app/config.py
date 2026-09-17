@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     chat_model: str = "gpt-4o-mini"
     embedding_model: str = "text-embedding-3-small"
 
-    chunk_size: int = 1000  # characters, not tokens
+    # 500 rather than 1000: top_k fixes how many chunks reach the chat model,
+    # not how big they are, so smaller chunks cut chat input (see examples/).
+    chunk_size: int = 500  # characters, not tokens
     chunk_overlap: int = 150
     top_k: int = 5
 

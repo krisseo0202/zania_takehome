@@ -117,7 +117,7 @@ survive flattening — an explicit "no" is evidence, not an absence.
 
 ## How it works
 
-Each section is split into ~1000-character overlapping chunks that keep their
+Each section is split into ~500-character overlapping chunks that keep their
 page or path, embedded once into a per-upload Chroma collection, and the five
 nearest chunks per question are passed to `gpt-4o-mini` as the only permitted
 evidence. The collection is deleted when the run ends, including on error.
@@ -128,7 +128,7 @@ evidence. The collection is deleted when the run ends, including on error.
 |---|---|
 | Index per run, discarded after | Two files in, pairs out. Persistence would add collection lifecycle and cleanup for no benefit here. |
 | Chroma, in-process | No infrastructure to stand up. Swappable behind LangChain's vector store interface. |
-| 1000-char chunks, 150 overlap, k=5 | A questionnaire answer is usually a paragraph or two. Defaults to tune against an eval set, not truths. |
+| 500-char chunks, 150 overlap, k=5 | `top_k` fixes how many chunks reach the model, not how big they are, so 500 costs less per question than 1000 with no measured quality loss (`examples/`). Overlap and k are defaults to tune against an eval set, not truths. |
 | One call per *distinct* question | Repeated questions are common in questionnaires and cost nothing to reuse. |
 | `Data Not Available` as a literal | Deterministic, so callers can filter and count it, and tests can assert on it. |
 | Provider errors raise | A timeout must not be reported as missing evidence. Abstention means retrieval found nothing. |
@@ -141,7 +141,7 @@ one JSON object per line:
 ```text
 {"stage": "questions", "count": 5}
 {"stage": "load", "sections": 84}
-{"stage": "chunk", "chunks": 333, "chunk_size": 1000, "chunk_overlap": 150}
+{"stage": "chunk", "chunks": 751, "chunk_size": 500, "chunk_overlap": 150}
 {"stage": "index", "vectors": 333, "top_k": 5}
 {"stage": "answer", "done": 1, "total": 19}
 {"stage": "done", "result": { ... same body as /answer ... }}
@@ -210,11 +210,12 @@ every quality claim above is a hand check rather than a measurement.
 
 ## Chunk-size comparison
 
-`examples/` holds the same 19 questions run at `chunk_size` 500, 1000 and 1500
-with `top_k=5`, plus `examples/README.md` reading them. Short version: cost
-falls as chunk size falls (k fixes the chunk count, not the chunk size, so chat
-input shrinks), and the answered/abstained split moves by less than the
-run-to-run variance, so those runs do not pick a winner.
+`examples/` holds six runs of the same 19 questions - `chunk_size` 500/1000/1500
+and, at 500, `chunk_overlap` 10/20/30% - with `examples/README.md` reading them.
+Short version: chunk size moves cost (smaller is cheaper, because `top_k` fixes
+the chunk count, not the chunk size), overlap barely moves it at all, and
+neither moves the answered/abstained split by more than the run-to-run
+variance. `chunk_size=500` is the default on the cost evidence, not on quality.
 
 ## Limitations
 
