@@ -31,6 +31,13 @@ export function applyStage(current: StageProgress, event: StageEvent): StageProg
       };
     case 'index':
       return { ...current, vectors: event.vectors, topK: event.top_k };
+    case 'generating': {
+      const rows = { ...(current.rows ?? {}) };
+      for (const position of event.positions ?? []) {
+        rows[position] = { status: 'generating' };
+      }
+      return { ...current, rows };
+    }
     case 'answer': {
       const rows = { ...(current.rows ?? {}) };
       for (const position of event.positions ?? []) {

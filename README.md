@@ -155,13 +155,16 @@ one JSON object per line:
 {"stage": "questions", "count": 5}
 {"stage": "load", "sections": 84}
 {"stage": "chunk", "chunks": 751, "chunk_size": 500, "chunk_overlap": 150}
-{"stage": "index", "vectors": 333, "top_k": 5}
+{"stage": "index", "vectors": 751, "top_k": 5}
+{"stage": "generating", "positions": [1]}
 {"stage": "answer", "done": 1, "total": 19, "positions": [1],
  "outcome": "abstain", "confidence": "low", "sources": ["page:81"], "ms": 2140}
 {"stage": "done", "result": { ... same body as /answer ... }}
 ```
 
-Every stage is emitted **after** it finishes, so the progress bar reports work
+`generating` is the exception to the rule below: it fires when a question
+reaches the chat model, so a question that finds no evidence is never shown as
+generating. Every other stage is emitted **after** it finishes, so the progress bar reports work
 that happened rather than work that is hoped for. Answering runs concurrently,
 so `positions` names the rows an event completes rather than assuming order; a
 duplicate question is answered once and marks every row it occupies. A failure arrives as
@@ -232,6 +235,14 @@ reading them. Short version: chunk size and `top_k` move cost (smaller and
 fewer are cheaper; cost is linear in k), overlap barely moves it, and none of
 them moves the answered/abstained split by more than the run-to-run variance.
 `chunk_size=500, top_k=5` is the default on the cost evidence, not on quality.
+
+## Retrieval score floor
+
+`SCORE_FLOOR` (default `0`, off) makes a question abstain without a model call
+when no retrieved chunk scores above it. On the sample report it is a cost
+lever worth ~24%, not a quality filter: answered and abstained questions
+overlap across almost the whole score range, so a floor cannot predict which
+questions are answerable. `examples/README.md` has the measured distribution.
 
 ## Limitations
 

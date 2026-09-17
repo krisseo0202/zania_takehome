@@ -114,7 +114,7 @@ def format_context(passages: list[Document]) -> str:
     )
 
 
-def answer_one(store, question: str, llm, label: str = "question") -> Answer:
+def answer_one(store, question: str, llm, label: str = "question", on_generating=None) -> Answer:
     """Answer one question. `label` identifies it in logs; the text never is.
 
     Questionnaire items can name customers and systems, so logs carry the
@@ -129,6 +129,10 @@ def answer_one(store, question: str, llm, label: str = "question") -> Answer:
             logger.warning("%s: no passages retrieved, abstaining without a model call", label)
             return Answer(FALLBACK)
 
+        # Announced here, not when the question was picked up: a question that
+        # finds no evidence abstains without ever reaching the model.
+        if on_generating:
+            on_generating()
         response = llm.invoke([
             SystemMessage(SYSTEM_PROMPT),
             HumanMessage(f"Excerpts:\n{format_context(passages)}\n\nQuestion: {question}"),
@@ -161,7 +165,7 @@ def answer_one(store, question: str, llm, label: str = "question") -> Answer:
         logger.exception("%s: failed", label)
         raise
 
-def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[dict], dict]:
+def answer_all(store, questions: list[str], llm, on_answer=None, on_generating=None) -> tuple[list[dict], dict]:
     """One model call per *distinct* question; output mirrors the input list.
 
     [Q1, Q2, Q1] costs two calls and returns [A1, A2, A1]. Distinct questions
@@ -182,7 +186,13 @@ def answer_all(store, questions: list[str], llm, on_answer=None) -> tuple[list[d
     cache: dict[str, Answer] = {}
     done = 0
     with ThreadPoolExecutor(max_workers=settings.max_concurrency) as pool:
-        answers = pool.map(lambda key: answer_one(store, key, llm, labels[key]), labels)
+        answers = pool.map(
+            lambda key: answer_one(
+                store, key, llm, labels[key],
+                on_generating=(lambda k=key: on_generating(positions[k])) if on_generating else None,
+            ),
+            labels,
+        )
         for key, answered in zip(labels, answers):  # map yields in submission order
             cache[key] = answered
             done += len(positions[key])

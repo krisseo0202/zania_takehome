@@ -40,7 +40,7 @@ export interface ServerConfig {
 
 /** One line of /answer/stream. Every stage is emitted after it completes. */
 export interface StageEvent {
-  stage: 'questions' | 'load' | 'chunk' | 'index' | 'answer' | 'done' | 'error';
+  stage: 'questions' | 'load' | 'chunk' | 'index' | 'generating' | 'answer' | 'done' | 'error';
   count?: number;
   sections?: number;
   chunks?: number;
@@ -64,7 +64,7 @@ export interface StageEvent {
 
 /** What the live list knows about one question while the run is in flight. */
 export interface QuestionProgress {
-  status: 'queued' | 'done' | 'abstain';
+  status: 'queued' | 'generating' | 'done' | 'abstain';
   confidence?: string;
   sources?: string[];
   ms?: number;

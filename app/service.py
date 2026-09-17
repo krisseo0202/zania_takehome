@@ -93,6 +93,7 @@ class DocumentQAService:
             emit("index", {"vectors": len(chunks), "top_k": settings.top_k})
             results, usage = answer_all(
                 store, questions, self.llm,
+                on_generating=lambda spots: emit("generating", {"positions": spots}),
                 on_answer=lambda done, total, answer, spots: emit("answer", {
                     "done": done,
                     "total": total,

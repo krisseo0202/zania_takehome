@@ -168,3 +168,16 @@ def test_progress_counts_every_position_including_duplicates():
     assert [d for d, _, _ in seen] == sorted(d for d, _, _ in seen)  # monotone
     # The duplicate is answered once but marks both rows it occupies.
     assert sorted(spot for _, _, spots in seen for spot in spots) == [1, 2, 3]
+
+
+def test_generating_fires_only_for_questions_that_reach_the_model():
+    started: list[list[int]] = []
+    # One question has evidence, one does not.
+    class SelectiveStore:
+        def similarity_search(self, question, k=5):
+            return [Document("x", metadata={"source_id": "json:a"})] if question == "Q1" else []
+
+    answer_all(SelectiveStore(), ["Q1", "Q2"], StubLLM(),
+               on_generating=lambda spots: started.append(spots))
+    # Q2 abstained on empty retrieval, so it never announced generating.
+    assert started == [[1]]

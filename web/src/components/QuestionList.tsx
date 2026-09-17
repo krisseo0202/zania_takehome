@@ -11,6 +11,7 @@ interface QuestionListProps {
 
 const LABELS: Record<QuestionProgress['status'], string> = {
   queued: 'queued',
+  generating: 'generating',
   done: 'done',
   abstain: 'abstain',
 };

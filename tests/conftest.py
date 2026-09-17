@@ -28,11 +28,17 @@ requires_nave_pdf = pytest.mark.skipif(
 class StubStore:
     """similarity_search with canned passages; records nothing itself."""
 
-    def __init__(self, passages):
+    def __init__(self, passages, scores=None):
         self.passages = passages
+        self.scores = scores
 
     def similarity_search(self, question, k=5):
         return self.passages[:k]
+
+    def similarity_search_with_relevance_scores(self, question, k=5):
+        """Descending scores from `self.scores`, or 0.9, 0.8 ... by default."""
+        scores = self.scores or [0.9 - 0.1 * i for i in range(len(self.passages))]
+        return list(zip(self.passages[:k], scores[:k]))
 
 
 class StubLLM:

@@ -98,3 +98,33 @@ again the spread between configs (6-9) is about the run-to-run noise.
 
 Kept at 5. It is the cheapest, and nothing above it shows a quality gain that
 survives the noise; a bigger k mostly buys longer prompts.
+
+## Retrieval score floor
+
+`SCORE_FLOOR` abstains without a model call when no chunk scores above it
+(cosine relevance, 0 to 1). Measured top-1 scores for the 19 questions against
+the Nave report, split by what the run actually answered:
+
+| | min | max |
+|---|---|---|
+| answered | 0.473 | 0.587 |
+| abstained | 0.355 | 0.602 |
+
+**The two classes overlap almost completely**, so the score cannot be used to
+predict whether a question is answerable. The highest-scoring question in the
+whole set (0.602) abstained. A floor is therefore a cost control, not a quality
+filter.
+
+The mockup's 0.30 is inert here: nothing scored below 0.355. A floor of 0.46
+sits under every answered question in this sample, and `nave-chunk500-k5-floor046.json`
+is that run:
+
+| | model calls skipped | chat input | est. cost | answered |
+|---|---|---|---|---|
+| floor off | 0 | 21,135 | $0.0054 | 8 |
+| floor 0.46 | 7 of 19 | 12,204 | $0.0041 | 9 |
+
+42% less chat input and 24% less cost, losing nothing on this document. The
+default stays **0 (off)**: 0.46 is tuned to one document and one question set,
+and with the classes overlapping there is no evidence it generalises. Turn it
+on per deployment once you have a labelled set to tune against.

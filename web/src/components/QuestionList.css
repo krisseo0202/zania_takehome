@@ -84,3 +84,11 @@
     display: none;
   }
 }
+
+.question-row--generating .question-row__status {
+  color: var(--color-accent);
+}
+
+.question-row--generating .question-row__text {
+  color: var(--color-text);
+}
