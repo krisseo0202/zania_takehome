@@ -5,7 +5,7 @@ import json
 import pytest
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
-from rag import DocumentQAService, answer_all, build_index, chunk_documents, load_document, open_index, retrieve
+from rag import answer_all, answer_document, build_index, chunk_documents, load_document, open_index, retrieve
 from tests.test_rag import TOY, StubLLM
 
 
@@ -98,9 +98,10 @@ def test_partial_indexing_failure_drops_its_own_collection(toy_chunks):
         build_index(toy_chunks, BrokenEmbeddings(size=64))
 
 
-def test_service_runs_the_whole_pipeline(embeddings):
-    service = DocumentQAService(embeddings, StubLLM())
-    body = service.answer_document("toy.json", json.dumps(TOY).encode(), b'["Q1", "Q1"]')
+def test_answer_document_runs_the_whole_pipeline(embeddings):
+    body = answer_document(
+        "toy.json", json.dumps(TOY).encode(), b'["Q1", "Q1"]', embeddings, StubLLM()
+    )
     assert body == {"document": "toy.json", "results": [
         {"question": "Q1", "answer": "A1"}, {"question": "Q1", "answer": "A1"},
     ]}

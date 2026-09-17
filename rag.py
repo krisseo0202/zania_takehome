@@ -132,10 +132,10 @@ def _load_pdf(filename: str, data: bytes) -> list[Document]:
     except Exception as exc:
         raise ValueError(f"cannot read PDF {filename}: {exc}") from exc
 
-    empty = len(pages) - len(docs)
-    if empty:
+    if len(docs) < len(pages):
         # Not an error, but the answers only cover the pages we could read.
-        logger.warning("%s: %d of %d pages had no text layer", filename, empty, len(pages))
+        logger.warning("%s: %d of %d pages had no text layer",
+                       filename, len(pages) - len(docs), len(pages))
     return docs
 
 
@@ -307,21 +307,15 @@ def answer_all(store, questions: list[str], llm) -> list[dict]:
 
 # --- whole request -----------------------------------------------------------
 
-class DocumentQAService:
-    """Holds the model clients and runs one upload end to end.
+def answer_document(
+    filename: str, document_bytes: bytes, questions_bytes: bytes, embeddings, llm
+) -> dict:
+    """One upload in, one response body out. Stateless: nothing survives the call.
 
-    Built once per process (the clients are expensive and thread-safe);
-    `answer_document` is stateless per call, so concurrent requests are fine.
-    Tests pass fake `embeddings` / `llm`.
+    The API route and the sample script both call this; tests pass fakes.
     """
-
-    def __init__(self, embeddings, llm):
-        self.embeddings = embeddings
-        self.llm = llm
-
-    def answer_document(self, filename: str, document_bytes: bytes, questions_bytes: bytes) -> dict:
-        questions = parse_questions(questions_bytes)
-        chunks = chunk_documents(load_document(filename, document_bytes))
-        with open_index(chunks, self.embeddings) as store:
-            results = answer_all(store, questions, self.llm)
-        return {"document": filename, "results": results}
+    questions = parse_questions(questions_bytes)
+    chunks = chunk_documents(load_document(filename, document_bytes))
+    with open_index(chunks, embeddings) as store:
+        results = answer_all(store, questions, llm)
+    return {"document": filename, "results": results}

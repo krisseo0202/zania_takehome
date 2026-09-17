@@ -47,10 +47,8 @@ def _require_key() -> SecretStr:
 
 @lru_cache(maxsize=1)
 def get_embeddings() -> OpenAIEmbeddings:
-    logger.info(
-        "embeddings client: %s (timeout %.0fs, max_retries %d)",
-        settings.embedding_model, settings.request_timeout, settings.max_retries,
-    )
+    logger.info("embeddings: %s (timeout %.0fs, retries %d)", settings.embedding_model,
+                settings.request_timeout, settings.max_retries)
     return OpenAIEmbeddings(
         model=settings.embedding_model,
         api_key=_require_key(),
@@ -61,11 +59,8 @@ def get_embeddings() -> OpenAIEmbeddings:
 
 @lru_cache(maxsize=1)
 def get_chat_model() -> ChatOpenAI:
-    logger.info(
-        "chat client: %s (temp %.1f, max_tokens %d, timeout %.0fs, max_retries %d)",
-        settings.chat_model, settings.temperature, settings.max_answer_tokens,
-        settings.request_timeout, settings.max_retries,
-    )
+    logger.info("chat: %s (temp %.1f, timeout %.0fs, retries %d)", settings.chat_model,
+                settings.temperature, settings.request_timeout, settings.max_retries)
     return ChatOpenAI(
         model=settings.chat_model,
         api_key=_require_key(),

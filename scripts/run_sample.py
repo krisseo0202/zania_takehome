@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import get_chat_model, get_embeddings
-from rag import DocumentQAService, chunk_documents, load_document, open_index, parse_questions, retrieve
+from rag import answer_document, chunk_documents, load_document, open_index, parse_questions, retrieve
 
 PREVIEW_CHARS = 200
 
@@ -35,9 +35,9 @@ def main(doc_path: str, questions_path: str, retrieval_only: bool = False) -> No
                     print(f"  [{passage.metadata['source_id']}] {text[:PREVIEW_CHARS]}")
         return
 
-    llm = get_chat_model()
-    response = DocumentQAService(embeddings, llm).answer_document(
-        document.name, document.read_bytes(), Path(questions_path).read_bytes()
+    response = answer_document(
+        document.name, document.read_bytes(), Path(questions_path).read_bytes(),
+        embeddings, get_chat_model(),
     )
     print(json.dumps(response, indent=2))
 
