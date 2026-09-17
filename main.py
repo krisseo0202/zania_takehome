@@ -26,6 +26,13 @@ from app.service import DocumentQAService
 from app.util import elapsed_ms
 
 logger = logging.getLogger(__name__)
+
+# Checked before a body is read, so a wrong upload costs nothing. The questions
+# file needs this because parse_questions only sees bytes: a .py whose contents
+# happen to be a JSON list would otherwise sail through.
+QUESTIONS_SUFFIXES = (".json",)
+DOCUMENT_SUFFIXES = (".pdf", ".json")
+
 DIST_DIR = Path(__file__).resolve().parent / "web" / "dist"  # React build, if any
 
 
@@ -63,6 +70,8 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
     @app.post("/answer")
     async def answer(questions_file: UploadFile, document_file: UploadFile):
         start = time.perf_counter()
+        _require_suffix(questions_file, QUESTIONS_SUFFIXES)
+        _require_suffix(document_file, DOCUMENT_SUFFIXES)
         questions = await _read_limited(questions_file)
         document = await _read_limited(document_file)
         filename = document_file.filename or "document"
@@ -93,6 +102,8 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
         Every stage is emitted after it completes, so the bar reports progress
         that happened rather than progress that is hoped for.
         """
+        _require_suffix(questions_file, QUESTIONS_SUFFIXES)
+        _require_suffix(document_file, DOCUMENT_SUFFIXES)
         questions = await _read_limited(questions_file)
         document = await _read_limited(document_file)
         filename = document_file.filename or "document"
@@ -143,6 +154,15 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
         # Mounted last so the SPA catch-all can never shadow /health or /answer.
         app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="frontend")
     return app
+
+
+def _require_suffix(upload: UploadFile, allowed: tuple[str, ...]) -> None:
+    name = (upload.filename or "").lower()
+    if not name.endswith(allowed):
+        raise HTTPException(
+            400,
+            f"{upload.filename or 'file'}: expected {' or '.join(allowed)}",
+        )
 
 
 async def _read_limited(upload: UploadFile) -> bytes:

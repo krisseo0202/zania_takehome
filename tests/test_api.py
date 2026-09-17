@@ -119,7 +119,38 @@ def test_stream_reports_each_stage_then_the_result(client):
 
 
 def test_stream_reports_a_bad_upload_as_an_error_event(client):
-    events = _stream_events(client, filename="doc.txt", document=b"hello")
+    # Right extension, unreadable contents: the failure can only be found once
+    # the pipeline starts, so it arrives as an error event rather than a status.
+    events = _stream_events(client, questions=b"not json")
     assert events[-1]["stage"] == "error"
     assert events[-1]["status"] == 400
     assert "done" not in [e["stage"] for e in events]
+
+
+@pytest.mark.parametrize("filename", ["questions.py", "questions.json.py", "questions", "questions.txt"])
+def test_questions_file_must_be_json_by_extension(client, filename):
+    # Contents are a valid JSON question list; only the extension is wrong.
+    res = client.post("/answer", files={
+        "questions_file": (filename, b'["Q1"]', "application/json"),
+        "document_file": ("toy.json", json.dumps(TOY).encode(), "application/octet-stream"),
+    })
+    assert res.status_code == 400
+    assert "expected .json" in res.json()["detail"]
+
+
+def test_document_file_must_be_pdf_or_json_by_extension(client):
+    res = client.post("/answer", files={
+        "questions_file": ("questions.json", b'["Q1"]', "application/json"),
+        "document_file": ("report.py", json.dumps(TOY).encode(), "application/octet-stream"),
+    })
+    assert res.status_code == 400
+    assert "expected .pdf or .json" in res.json()["detail"]
+
+
+def test_stream_rejects_a_wrong_extension_before_doing_any_work(client):
+    res = client.post("/answer/stream", files={
+        "questions_file": ("questions.py", b'["Q1"]', "application/json"),
+        "document_file": ("toy.json", json.dumps(TOY).encode(), "application/octet-stream"),
+    })
+    # A 400 status, not a 200 stream carrying an error event.
+    assert res.status_code == 400

@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { wrongTypeError } from '../validation';
 import './FileField.css';
 
 interface FileFieldProps {
   id: string;
   accept: string;
+  /** Extensions the API will accept, e.g. ['.json']. Enforced here too, since
+   * `accept` does not constrain a dropped file or a picker set to "all files". */
+  accepted: string[];
   file: File | null;
   metaText: string | null;
   disabled: boolean;
@@ -12,15 +16,35 @@ interface FileFieldProps {
 
 /** One `questions_file` / `document_file` picker, styled to match the mockup's
  * run bar. Used twice with different ids/accept types in RunForm. */
-export function FileField({ id, accept, file, metaText, disabled, onSelect }: FileFieldProps) {
+export function FileField({
+  id,
+  accept,
+  accepted,
+  file,
+  metaText,
+  disabled,
+  onSelect,
+}: FileFieldProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [rejected, setRejected] = useState<string | null>(null);
+
+  function select(candidate: File | null) {
+    if (!candidate) {
+      setRejected(null);
+      onSelect(null);
+      return;
+    }
+    const problem = wrongTypeError(candidate, accepted);
+    setRejected(problem);
+    onSelect(problem ? null : candidate);
+  }
 
   function handleDrop(event: React.DragEvent) {
     event.preventDefault();
     setIsDragging(false);
     if (disabled) return;
     const dropped = event.dataTransfer.files?.[0];
-    if (dropped) onSelect(dropped);
+    if (dropped) select(dropped);
   }
 
   return (
@@ -61,9 +85,14 @@ export function FileField({ id, accept, file, metaText, disabled, onSelect }: Fi
           accept={accept}
           className="file-field__input"
           disabled={disabled}
-          onChange={(event) => onSelect(event.target.files?.[0] ?? null)}
+          onChange={(event) => select(event.target.files?.[0] ?? null)}
         />
       </div>
+      {rejected && (
+        <p className="file-field__rejected" role="alert">
+          {rejected}
+        </p>
+      )}
     </div>
   );
 }

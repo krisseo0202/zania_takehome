@@ -45,9 +45,14 @@ export function ResultsTable({ rows }: ResultsTableProps) {
                 {row.answer}
               </td>
               {/* Best-matching retrieved passage, with a count of the rest.
-                  Evidence shown to the model, not a verified citation. */}
-              <td className="results-table__source" title={row.sources?.join(', ')}>
-                {formatSources(row.sources)}
+                  Blank when the answer abstains: those passages are what was
+                  searched, not evidence for an answer, and a page number next
+                  to "Data Not Available" reads as a citation for it. */}
+              <td
+                className="results-table__source"
+                title={row.isMissing ? undefined : row.sources?.join(', ')}
+              >
+                {row.isMissing ? '—' : formatSources(row.sources)}
               </td>
             </tr>
           ))}

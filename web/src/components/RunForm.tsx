@@ -41,7 +41,8 @@ export function RunForm({
     >
       <FileField
         id="questions_file"
-        accept="application/json"
+        accept=".json,application/json"
+        accepted={['.json']}
         file={questionsFile}
         metaText={questionsMeta}
         disabled={isRunning}
@@ -49,7 +50,8 @@ export function RunForm({
       />
       <FileField
         id="document_file"
-        accept=".pdf,.json"
+        accept=".pdf,.json,application/pdf,application/json"
+        accepted={['.pdf', '.json']}
         file={documentFile}
         metaText={documentMeta}
         disabled={isRunning}

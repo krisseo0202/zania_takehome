@@ -105,12 +105,12 @@ answer abstains. `usage.estimated_cost_usd` applies the list prices in
 
 ## Inputs
 
-**Questions** — JSON only. `["q1", "q2"]`, `{"questions": [...]}`, or
+**Questions** — `.json` only, checked by extension before the body is read. `["q1", "q2"]`, `{"questions": [...]}`, or
 `[{"question": ...}]`. Order and duplicates are preserved; a duplicate is
 answered once and repeated in the output. Anything else is rejected before a
 token is spent.
 
-**Document** — `.pdf` or `.json`. A PDF becomes one section per page
+**Document** — `.pdf` or `.json`, likewise checked by extension. A PDF becomes one section per page
 (`page:12`); a JSON document becomes one section per top-level key, flattened to
 `hosting.provider: "AWS"` lines (`json:hosting`). `false`, `0` and `null`
 survive flattening — an explicit "no" is evidence, not an absence.

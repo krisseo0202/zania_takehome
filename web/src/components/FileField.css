@@ -105,3 +105,9 @@
     transition: none;
   }
 }
+
+.file-field__rejected {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-amber);
+}

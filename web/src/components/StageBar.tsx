@@ -55,7 +55,7 @@ function stages(p: StageProgress): Stage[] {
     },
     {
       name: 'Chunk',
-      detail: p.chunks === undefined ? null : `${p.chunks} · ${p.chunkSize}/${p.chunkOverlap}`,
+      detail: p.chunks === undefined ? null : `${p.chunks} chunks`,
       fraction: p.chunks === undefined ? 0 : 1,
     },
     {
