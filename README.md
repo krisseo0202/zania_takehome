@@ -174,8 +174,9 @@ carry the upload.
 
 ## Web front end (optional)
 
-`web/` is a small React page over the same API; the service mounts `web/dist`
-at `/` when that build exists, so the API alone needs none of it.
+`web/` is a small React page over the same API. The Docker image builds it
+and the service mounts `web/dist` at `/`; without a build, `/` redirects to
+the API docs. To build it for the venv path:
 
 ```bash
 cd web && npm install && npm run build   # needs Node >= 20.19 (see web/.nvmrc)

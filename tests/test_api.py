@@ -164,3 +164,11 @@ def test_stream_answer_events_identify_the_rows_they_complete(client):
     assert all(e["outcome"] in ("done", "abstain") for e in answers)
     assert all(e["confidence"] in ("high", "medium", "low") for e in answers)
     assert all(isinstance(e["ms"], int) for e in answers)
+
+
+def test_root_redirects_to_docs_without_a_front_end_build(monkeypatch):
+    import main
+
+    monkeypatch.setattr(main, "DIST_DIR", main.DIST_DIR / "missing")
+    client = TestClient(create_app(service=object()), follow_redirects=False)
+    assert (client.get("/").status_code, client.get("/").headers["location"]) == (307, "/docs")

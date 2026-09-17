@@ -17,7 +17,7 @@ from pathlib import Path
 import openai
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.answering import EmptyAnswer
@@ -156,6 +156,10 @@ def create_app(service: DocumentQAService | None = None) -> FastAPI:
     if DIST_DIR.exists():
         # Mounted last so the SPA catch-all can never shadow /health or /answer.
         app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="frontend")
+    else:
+        @app.get("/", include_in_schema=False)
+        async def root():  # no front-end build: land on the API docs, not a 404
+            return RedirectResponse("/docs")
     return app
 
 
